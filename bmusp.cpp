@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include "library.cpp"
 #include "player.cpp"
-#include "libs/tinyfiledialogs.h"
+#include "tinyfiledialogs.h"
 #include "libs/ricons.h"
 #include "libs/raygui.h"
 
@@ -98,8 +98,6 @@ int main(void)
     {
         totalwidth += i;
     }
-
-    cout << GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH) << endl;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow((totalwidth * 8) + 15, 450, "bmusp");
