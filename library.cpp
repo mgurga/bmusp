@@ -19,8 +19,9 @@ class Library
 {
 public:
     list<Song> songlist; // generated from music directories
-    list<string> mdirs;  // music directories
-    
+    list<string> mdirs;  // music directories and single song files
+    const vector<string> filters = {"*.mp3", "*.flac", "*.m4a", "*.ogg", "*.wav"};
+
     void populate()
     {
         totaladditions = 0;
@@ -28,8 +29,17 @@ public:
         cout << "total music directories: " << mdirs.size() << endl;
         for (auto const path : mdirs)
         {
-            cout << "starting recursive search on: " << path << endl;
-            populate_rec(path, 0);
+            const filesystem::path file(path);
+            if (filesystem::is_regular_file(path))
+            {
+                cout << "added single file" << path << endl;
+                add_regular_file(path);
+            }
+            else
+            {
+                cout << "starting recursive search on: " << path << endl;
+                populate_rec(path, 0);
+            }
         }
         // cout << "added " << totaladditions << " songs to songlist" << endl;
         cout << "songlist has a total of " << songlist.size() << " songs" << endl;
@@ -100,7 +110,8 @@ private:
         if (depth > 5)
             return;
         cout << "searching path: " << path << endl;
-        for (const auto &entry : std::filesystem::directory_iterator(path))
+
+        for (const auto &entry : filesystem::directory_iterator(path))
         {
             if (entry.is_directory())
             {
@@ -108,30 +119,41 @@ private:
             }
             else if (entry.is_regular_file())
             {
-                string ext = entry.path().filename().extension();
-                if (ext == ".flac" || ext == ".mp3" || ext == ".wav")
-                {
-                    // cout << "adding " << entry.path().filename() << " to songlist" << endl;
-                    Song ns;
-                    ns.path = entry.path();
-                    ns.plays = 0;
-
-                    TagLib::FileRef f(entry.path().c_str());
-                    TagLib::AudioProperties *properties = f.audioProperties();
-
-                    if (!f.isNull() && f.tag())
-                    {
-                        TagLib::Tag *tag = f.tag();
-                        ns.trackNum = tag->track();
-                        ns.name = tag->title().toCString();
-                        ns.album = tag->album().toCString();
-                        ns.artist = tag->artist().toCString();
-                        ns.duration = properties->length();
-                    }
-                    songlist.push_back(ns);
-                    totaladditions++;
-                }
+                add_regular_file(entry.path());
             }
+        }
+    }
+
+    void add_regular_file(string path)
+    {
+        auto entry = filesystem::directory_entry(path);
+        string ext = entry.path().filename().extension();
+
+        bool supported = false;
+        for (string i : filters)
+            if (ext == i.substr(1))
+                supported = true;
+
+        if (supported)
+        {
+            Song ns;
+            ns.path = entry.path();
+            ns.plays = 0;
+
+            TagLib::FileRef f(entry.path().c_str());
+            TagLib::AudioProperties *properties = f.audioProperties();
+
+            if (!f.isNull() && f.tag())
+            {
+                TagLib::Tag *tag = f.tag();
+                ns.trackNum = tag->track();
+                ns.name = tag->title().toCString();
+                ns.album = tag->album().toCString();
+                ns.artist = tag->artist().toCString();
+                ns.duration = properties->length();
+            }
+            songlist.push_back(ns);
+            totaladditions++;
         }
     }
 };

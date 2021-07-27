@@ -94,7 +94,8 @@ int main(void)
     lib.populate();
 
     int totalwidth = 0;
-    for (int i : song_tag_lengths) {
+    for (int i : song_tag_lengths)
+    {
         totalwidth += i;
     }
 
@@ -119,6 +120,9 @@ int main(void)
         BeginDrawing();
         ClearBackground(BLACK);
         GuiSetStyle(BUTTON, BORDER_WIDTH, 1);
+
+        if (fileddedit)
+            GuiLock();
 
         // set scrollbar variables
         panelRec = {0, HEADER_HEIGHT, (float)sWidth, (float)sHeight - HEADER_HEIGHT};
@@ -205,18 +209,26 @@ int main(void)
         EndScissorMode();
 
         // file dropdown
-        if (fileddedit)
-            GuiLock();
-
         Vector2 mouse = GetMousePosition();
         GuiSetStyle(DROPDOWNBOX, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiUnlock();
         if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Quit", &fileddnum, fileddedit))
         {
             fileddedit = !fileddedit;
-            cout << "selected option: " << fileddnum << endl;
             switch (fileddnum)
             {
+            case 1:
+            {
+                const char *f[256];
+                for (int i = 0; i < lib.filters.size(); i++)
+                {
+                    f[i] = lib.filters[i].c_str();
+                }
+                auto mpath = tinyfd_openFileDialog("select music files", NULL, lib.filters.size(), &f[0], "", 1);
+                lib.mdirs.push_back(mpath);
+                lib.populate();
+                break;
+            }
             case 2:
             {
                 auto mpath = tinyfd_selectFolderDialog("select song folder", "");
