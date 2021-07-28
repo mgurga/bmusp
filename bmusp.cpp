@@ -6,8 +6,8 @@
 #include "library.cpp"
 #include "player.cpp"
 #include "tinyfiledialogs.h"
-#include "libs/ricons.h"
-#include "libs/raygui.h"
+#include "ricons.h"
+#include "raygui.h"
 
 using namespace std;
 
@@ -166,25 +166,27 @@ int main(void)
         // current song progress bar
         string pbTime = sec_to_minsec(plr.current_position()) + "/" + sec_to_minsec(plr.song.duration);
         GuiSetStyle(PROGRESSBAR, TEXT_PADDING, 3);
+        GuiSetStyle(SLIDER, SLIDER_RIGHT_TEXT_CONTAINED, 1);
+        GuiSetStyle(SLIDER, SLIDER_LEFT_TEXT_CONTAINED, 1);
         if (plr.is_playing())
         {
             string pbSong = "";
             pbSong.append(to_string(plr.song.trackNum) + ". ");
             pbSong.append(plr.song.name);
             GuiSliderPro({95, 0, (float)sWidth - 170, HEADER_HEIGHT}, pbSong.c_str(),
-                         pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10, true);
+                         pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
         }
         else
         {
             string status = plr.paused ? "Paused" : "Stopped";
             GuiSliderPro({95, 0, (float)sWidth - 170, HEADER_HEIGHT}, status.c_str(),
-                         "0:00/0:00", 1, 0, 2, 10, true);
+                         "0:00/0:00", 1, 0, 2, 10);
         }
 
         // volume slider
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         float vol = GuiSliderPro({(float)sWidth - 75, 0, 75, HEADER_HEIGHT}, "",
-                                 to_string(plr.get_volume()).c_str(), plr.get_volume(), 0, 100, 5, true);
+                                 to_string(plr.get_volume()).c_str(), plr.get_volume(), 0, 100, 5);
         GuiLabel({(float)sWidth - 75, 0, 75, HEADER_HEIGHT}, "#122#");
         plr.set_volume(vol);
 

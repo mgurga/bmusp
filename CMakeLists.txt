@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 find_package(raylib REQUIRED)
 find_package(SDL2 REQUIRED)
+
 message("fetching tinyfiledialogs")
 FetchContent_Declare(
     tinyfiledialogs
@@ -16,6 +17,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tinyfiledialogs)
 include_directories(${tinyfiledialogs_SOURCE_DIR})
+
+# using my own repository because my pull request has not been accepted yet
+message("fetching raygui")
+FetchContent_Declare(
+    raygui
+    GIT_REPOSITORY "https://github.com/mgurga/raygui.git"
+    GIT_TAG        "45ee3893417947138c5a40b1a428f1686caf246c"
+)
+FetchContent_MakeAvailable(raygui)
+include_directories(${raygui_SOURCE_DIR}/src)
 
 file(COPY assets DESTINATION .)
 add_executable( ${PROJECT_NAME}
