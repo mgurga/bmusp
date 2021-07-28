@@ -30,8 +30,8 @@ include_directories(${raygui_SOURCE_DIR}/src)
 
 file(COPY assets DESTINATION .)
 add_executable( ${PROJECT_NAME}
-                bmusp.cpp
-                player.cpp
-                library.cpp
+                src/bmusp.cpp
+                src/player.cpp
+                src/library.cpp
                 ${tinyfiledialogs_SOURCE_DIR}/tinyfiledialogs.c)
 target_link_libraries(${PROJECT_NAME} raylib tag SDL2 SDL2_mixer)
