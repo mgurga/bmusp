@@ -1,0 +1,13 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "configure build run",
+        "command": "./build.sh",
+        "args": ["configure", "build", "run"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      }
+    ]
+  }
