@@ -1,6 +1,8 @@
 mkdir -p build
 cd build
 
+rm bmusp
+
 for command in "$@"
 do
     case $command in
@@ -17,7 +19,7 @@ do
             cmake --build . --clean-first
             ;;
         "release-build")
-            echo "clean building..."
+            echo "clean building release..."
             cmake --build . --clean-first --config Release
             ;;
         "run")

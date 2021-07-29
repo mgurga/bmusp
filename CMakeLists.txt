@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 find_package(raylib REQUIRED)
-find_package(SDL2 REQUIRED)
+pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2 SDL2_mixer)
 
 message("fetching tinyfiledialogs")
 FetchContent_Declare(
@@ -34,4 +34,4 @@ add_executable( ${PROJECT_NAME}
                 src/player.cpp
                 src/library.cpp
                 ${tinyfiledialogs_SOURCE_DIR}/tinyfiledialogs.c)
-target_link_libraries(${PROJECT_NAME} raylib tag SDL2 SDL2_mixer)
+target_link_libraries(${PROJECT_NAME} raylib tag ${SDL2_LIBRARIES})

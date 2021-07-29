@@ -2,9 +2,25 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "configure build run",
+        "label": "cfg build run",
         "command": "./build.sh",
         "args": ["configure", "build", "run"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      {
+        "label": "cfg cleanbuild run",
+        "command": "./build.sh",
+        "args": ["configure", "clean-build", "run"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      {
+        "label": "cfg release-build",
+        "command": "./build.sh",
+        "args": ["configure", "release-build"],
         "options": {
           "cwd": "${workspaceFolder}"
         }
