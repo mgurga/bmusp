@@ -13,6 +13,11 @@
 #include "common.h"
 #endif
 
+#ifndef CONFIG_H
+#define CONFIG_H
+#include "../config.h"
+#endif
+
 using namespace std;
 
 class Library
@@ -69,7 +74,7 @@ private:
 
     static bool song_compare(const Song &s1, const Song &s2)
     {
-        list<SongTag> sortorder = {ARTIST, ALBUM, TRACKNUM}; // how to sort songlist
+        list<SongTag> sortorder = SONG_SORT_ORDER; // how to sort songlist
 
         for (SongTag t : sortorder)
         {

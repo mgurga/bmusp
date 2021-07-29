@@ -2,6 +2,7 @@
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
 #include <list>
+#include <regex>
 #include "raylib.h"
 #include "library.cpp"
 #include "player.cpp"
@@ -9,12 +10,16 @@
 #include "ricons.h"
 #include "raygui.h"
 
+#ifndef CONFIG_H
+#define CONFIG_H
+#include "../config.h"
+#endif
+
 using namespace std;
 
-#define HEADER_HEIGHT 15
-SongTag song_tag_order[] = {ARTIST, ALBUM, TRACKNUM, NAME, DURATION};
-int song_tag_lengths[] = {20, 20, 3, 30, 5};
-string song_tag_sepatator = "|";
+SongTag song_tag_order[] = SONG_TAG_ORDER;
+int song_tag_lengths[] = SONG_TAG_LENGTHS;
+string song_tag_sepatator = SONG_TAG_SEPARATOR;
 
 string sec_to_minsec(int i)
 {
@@ -30,6 +35,7 @@ string sec_to_minsec(int i)
 string get_song_button_name(Song s)
 {
     string out;
+    char filler = SONG_TAG_FILLER_CHAR;
 
     for (int i = 0; i < sizeof(song_tag_lengths) / sizeof(song_tag_lengths[0]); i++)
     {
@@ -38,35 +44,35 @@ string get_song_button_name(Song s)
         case ARTIST:
         {
             string f_artist = s.artist;
-            f_artist.resize(song_tag_lengths[i], ' ');
+            f_artist.resize(song_tag_lengths[i], filler);
             out.append(f_artist);
             break;
         }
         case NAME:
         {
             string f_name = s.name;
-            f_name.resize(song_tag_lengths[i], ' ');
+            f_name.resize(song_tag_lengths[i], filler);
             out.append(f_name);
             break;
         }
         case ALBUM:
         {
             string f_album = s.album;
-            f_album.resize(song_tag_lengths[i], ' ');
+            f_album.resize(song_tag_lengths[i], filler);
             out.append(f_album);
             break;
         }
         case TRACKNUM:
         {
             string f_tnum = to_string(s.trackNum);
-            f_tnum.resize(song_tag_lengths[i], ' ');
+            f_tnum.resize(song_tag_lengths[i], filler);
             out.append(f_tnum);
             break;
         }
         case DURATION:
         {
             string f_dur = sec_to_minsec(s.duration);
-            f_dur.resize(song_tag_lengths[i], ' ');
+            f_dur.resize(song_tag_lengths[i], filler);
             out.append(f_dur);
             break;
         }
@@ -86,11 +92,16 @@ int main(void)
     int fileddnum = 0;
     bool fileddedit = false;
     int sWidth, sHeight;
-    Rectangle panelRec = {0, HEADER_HEIGHT, 0, 0};
-    Rectangle panelContentRec = {0, HEADER_HEIGHT, 1000, 1000};
+    Rectangle panelRec = {0, 0, 0, 0};
+    Rectangle panelContentRec = {0, 0, 1000, 1000};
     Vector2 panelScroll = {0, 0};
 
-    lib.mdirs.push_back(string(getenv("HOME")) + "/Music");
+    string configmdirs[] = MUSIC_DIRECTORIES;
+    for (string dir : configmdirs)
+    {
+        dir = regex_replace(dir, std::regex("\\%HOME%"), string(getenv("HOME")));
+        lib.mdirs.push_back(dir);
+    }
     lib.populate();
 
     int totalwidth = 0;
@@ -124,12 +135,12 @@ int main(void)
 
         // set scrollbar variables
         panelRec = {0, HEADER_HEIGHT, (float)sWidth, (float)sHeight - HEADER_HEIGHT};
-        panelContentRec = {0, HEADER_HEIGHT, (float)sWidth - 12, (float)(lib.songlist.size() - 1) * 16 - HEADER_HEIGHT};
+        panelContentRec = {0, HEADER_HEIGHT, (float)sWidth - 12, (float)(lib.songlist.size()) * (SONG_HEIGHT + 1)};
         Rectangle view = GuiScrollPanel(panelRec, panelContentRec, &panelScroll);
 
         // play pause button
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
-        if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#131#" : "#132#"))
+        if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#132#" : "#131#"))
         {
             if (plr.is_playing())
             {
@@ -173,36 +184,39 @@ int main(void)
             string pbSong = "";
             pbSong.append(to_string(plr.song.trackNum) + ". ");
             pbSong.append(plr.song.name);
-            GuiSliderPro({95, 0, (float)sWidth - 170, HEADER_HEIGHT}, pbSong.c_str(),
+            GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
                          pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
         }
         else
         {
             string status = plr.paused ? "Paused" : "Stopped";
-            GuiSliderPro({95, 0, (float)sWidth - 170, HEADER_HEIGHT}, status.c_str(),
+            GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, status.c_str(),
                          "0:00/0:00", 1, 0, 2, 10);
         }
 
         // volume slider
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
-        float vol = GuiSliderPro({(float)sWidth - 75, 0, 75, HEADER_HEIGHT}, "",
+        float vol = GuiSliderPro({(float)sWidth - VOLUME_SLIDER_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "",
                                  to_string(plr.get_volume()).c_str(), plr.get_volume(), 0, 100, 5);
-        GuiLabel({(float)sWidth - 75, 0, 75, HEADER_HEIGHT}, "#122#");
+        GuiLabel({(float)sWidth - VOLUME_SLIDER_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "#122#");
         plr.set_volume(vol);
 
         // draw song list
-        BeginScissorMode(view.x, view.y, view.width, view.height);
+        BeginScissorMode(0, HEADER_HEIGHT, sWidth, sHeight - HEADER_HEIGHT);
         GuiGrid((Rectangle){panelRec.x + panelScroll.x, panelRec.y + panelScroll.y, panelContentRec.width, panelContentRec.height}, 16, 3);
         GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
 
-        int songnum = 1;
+        int songnum = 0;
         for (Song s : lib.songlist)
         {
-            if (GuiButton({0, (float)songnum * 16 + panelScroll.y, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), 15}, get_song_button_name(s).c_str()))
+            if (GuiButton({0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT}, get_song_button_name(s).c_str()))
             {
                 // cout << "playing " << s.name << endl;
-                plr.play(s);
+                if (GetMouseY() > HEADER_HEIGHT)
+                {
+                    plr.play(s);
+                }
             }
             songnum++;
         }

@@ -4,6 +4,11 @@
 #include "common.h"
 #endif
 
+#ifndef CONFIG_H
+#define CONFIG_H
+#include "../config.h"
+#endif
+
 #include <ctime>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_mixer.h"
@@ -14,7 +19,6 @@ class Player
 {
 public:
     Song song;
-    Song lastPlayed;
     bool paused;
 
     Player()
@@ -44,8 +48,8 @@ public:
             //         audio_buffers);
         }
 
-        Mix_VolumeMusic(50);
-        vol = 50;
+        Mix_VolumeMusic(DEFAULT_VOLUME);
+        vol = DEFAULT_VOLUME;
     }
 
     void play(Song s)
@@ -65,7 +69,7 @@ public:
     {
         if (paused)
             return pausepos;
-        if (starttime == NULL)
+        if (starttime == 0)
             return -1;
         if (Mix_PlayingMusic == 0)
             return -1; // no music playing
@@ -99,7 +103,6 @@ public:
         starttime = 0;
         pausestart = 0;
         paused = true;
-        lastPlayed = song;
     }
 
     bool is_playing()
