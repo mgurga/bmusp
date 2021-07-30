@@ -33,5 +33,6 @@ add_executable( ${PROJECT_NAME}
                 src/bmusp.cpp
                 src/player.cpp
                 src/library.cpp
+                src/cli.cpp
                 ${tinyfiledialogs_SOURCE_DIR}/tinyfiledialogs.c)
 target_link_libraries(${PROJECT_NAME} raylib tag ${SDL2_LIBRARIES})

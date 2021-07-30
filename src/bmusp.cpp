@@ -4,8 +4,7 @@
 #include <list>
 #include <regex>
 #include "raylib.h"
-#include "library.cpp"
-#include "player.cpp"
+#include "cli.cpp"
 #include "tinyfiledialogs.h"
 #include "ricons.h"
 #include "raygui.h"
@@ -13,6 +12,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #include "../config.h"
+#endif
+
+#ifndef PLAYER_CPP
+#define PLAYER_CPP
+#include "player.cpp"
+#endif
+
+#ifndef LIBRARY_CPP
+#define LIBRARY_CPP
+#include "library.cpp"
 #endif
 
 using namespace std;
@@ -84,11 +93,18 @@ string get_song_button_name(Song s)
     return out;
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
+    Cli cli;
+    if(argc > 1) {
+        cli.send_message(argc, argv);
+        exit(0);
+    }
+
     Library lib;
     Player plr;
 
+    int frame = 0;
     int fileddnum = 0;
     bool fileddedit = false;
     int sWidth, sHeight;
@@ -99,7 +115,7 @@ int main(void)
     string configmdirs[] = MUSIC_DIRECTORIES;
     for (string dir : configmdirs)
     {
-        dir = regex_replace(dir, std::regex("\\%HOME%"), string(getenv("HOME")));
+        dir = regex_replace(dir, regex("\\%HOME%"), string(getenv("HOME")));
         lib.mdirs.push_back(dir);
     }
     lib.populate();
@@ -126,6 +142,10 @@ int main(void)
             plr.play(nSong);
         }
 
+        // check for command
+        if (frame % FRAMES_BETWEEN_CMD_CHECK == 0)
+            cli.check_command(&plr, &lib);
+
         BeginDrawing();
         ClearBackground(BLACK);
         GuiSetStyle(BUTTON, BORDER_WIDTH, 1);
@@ -145,12 +165,12 @@ int main(void)
             if (plr.is_playing())
             {
                 plr.pause();
-                cout << "pausing" << endl;
+                // cout << "pausing" << endl;
             }
             else
             {
                 plr.unpause();
-                cout << "resuming" << endl;
+                // cout << "resuming" << endl;
             }
         }
 
@@ -261,6 +281,7 @@ int main(void)
         }
 
         EndDrawing();
+        frame++;
     }
 
     CloseWindow();
