@@ -93,10 +93,11 @@ string get_song_button_name(Song s)
     return out;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     Cli cli;
-    if(argc > 1) {
+    if (argc > 1)
+    {
         cli.send_message(argc, argv);
         exit(0);
     }
@@ -204,8 +205,9 @@ int main(int argc, char* argv[])
             string pbSong = "";
             pbSong.append(to_string(plr.song.trackNum) + ". ");
             pbSong.append(plr.song.name);
-            GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
-                         pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
+            float pos = GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
+                                     pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
+            plr.jump_to(pos);
         }
         else
         {

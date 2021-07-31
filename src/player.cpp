@@ -97,6 +97,17 @@ public:
         pausestart = 0;
     }
 
+    void jump_to(int seek)
+    {
+        if(current_position() == seek)
+            return;
+        if(!is_playing())
+            return;
+        Mix_SetMusicPosition(seek);
+        int diff = current_position() - seek;
+        starttime += diff;
+    }
+
     void stop()
     {
         Mix_HaltMusic();
