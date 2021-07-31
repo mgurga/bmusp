@@ -105,7 +105,6 @@ int main(int argc, char *argv[])
     Library lib;
     Player plr;
 
-    int frame = 0;
     int fileddnum = 0;
     bool fileddedit = false;
     int sWidth, sHeight;
@@ -144,7 +143,7 @@ int main(int argc, char *argv[])
         }
 
         // check for command
-        if (frame % FRAMES_BETWEEN_CMD_CHECK == 0)
+        if (fmod(floor(GetTime() * 60), FRAMES_BETWEEN_CMD_CHECK) == 0)
             cli.check_command(&plr, &lib);
 
         BeginDrawing();
@@ -232,14 +231,15 @@ int main(int argc, char *argv[])
         int songnum = 0;
         for (Song s : lib.songlist)
         {
-            if (GuiButton({0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT}, get_song_button_name(s).c_str()))
-            {
-                // cout << "playing " << s.name << endl;
-                if (GetMouseY() > HEADER_HEIGHT)
+            if(songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
+                if (GuiButton({0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT}, get_song_button_name(s).c_str()))
                 {
-                    plr.play(s);
+                    // cout << "playing " << s.name << endl;
+                    if (GetMouseY() > HEADER_HEIGHT)
+                    {
+                        plr.play(s);
+                    }
                 }
-            }
             songnum++;
         }
         EndScissorMode();
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
         Vector2 mouse = GetMousePosition();
         GuiSetStyle(DROPDOWNBOX, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiUnlock();
-        if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Quit", &fileddnum, fileddedit))
+        if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Empty Songlist;Quit", &fileddnum, fileddedit))
         {
             fileddedit = !fileddedit;
             switch (fileddnum)
@@ -277,13 +277,16 @@ int main(int argc, char *argv[])
                 break;
             }
             case 3:
+                lib.mdirs.clear();
+                lib.populate();
+                break;
+            case 4:
                 exit(0);
             }
             fileddnum = 0;
         }
 
         EndDrawing();
-        frame++;
     }
 
     CloseWindow();
