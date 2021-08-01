@@ -112,13 +112,19 @@ int main(int argc, char *argv[])
     Rectangle panelContentRec = {0, 0, 1000, 1000};
     Vector2 panelScroll = {0, 0};
 
-    string configmdirs[] = MUSIC_DIRECTORIES;
-    for (string dir : configmdirs)
+    if (!lib.load_library())
     {
-        dir = regex_replace(dir, regex("\\%HOME%"), string(getenv("HOME")));
-        lib.mdirs.push_back(dir);
+        cout << "library database not detected, creating one" << endl;
+        string configmdirs[] = MUSIC_DIRECTORIES;
+        for (string dir : configmdirs)
+        {
+            dir = regex_replace(dir, regex("\\%HOME%"), string(getenv("HOME")));
+            lib.add_mdir(dir);
+        }
+        lib.populate();
     }
-    lib.populate();
+    else
+        cout << "loaded existing library" << endl;
 
     int totalwidth = 0;
     for (int i : song_tag_lengths)
@@ -231,7 +237,7 @@ int main(int argc, char *argv[])
         int songnum = 0;
         for (Song s : lib.songlist)
         {
-            if(songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
+            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
                 if (GuiButton({0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT}, get_song_button_name(s).c_str()))
                 {
                     // cout << "playing " << s.name << endl;
@@ -261,7 +267,7 @@ int main(int argc, char *argv[])
                     f[i] = lib.filters[i].c_str();
                 }
                 auto mpath = tinyfd_openFileDialog("select music files", NULL, lib.filters.size(), &f[0], "", 1);
-                lib.mdirs.push_back(mpath);
+                lib.add_mdir(mpath);
                 lib.populate();
                 break;
             }
@@ -271,13 +277,13 @@ int main(int argc, char *argv[])
                 if (mpath != NULL)
                 {
                     cout << "adding music folder: " << mpath << endl;
-                    lib.mdirs.push_back(mpath);
+                    lib.add_mdir(mpath);
                     lib.populate();
                 }
                 break;
             }
             case 3:
-                lib.mdirs.clear();
+                lib.clear_mdir();
                 lib.populate();
                 break;
             case 4:

@@ -3,10 +3,16 @@
 #include <list>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
+
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/list.hpp>
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -24,8 +30,25 @@ class Library
 {
 public:
     list<Song> songlist; // generated from music directories
-    list<string> mdirs;  // music directories and single song files
     const vector<string> filters = {"*.mp3", "*.flac", "*.m4a", "*.ogg", "*.wav"};
+
+    bool load_library()
+    {
+        Library newlib;
+        {
+            ifstream ifs(string(CONFIG_LOCATION) + "library");
+            if (ifs.good())
+            {
+                cereal::BinaryInputArchive ia(ifs);
+                ia >> newlib;
+            }
+            else
+                return false;
+        }
+        songlist = newlib.songlist;
+        mdirs = newlib.mdirs;
+        return true;
+    }
 
     void populate()
     {
@@ -49,6 +72,27 @@ public:
         // cout << "added " << totaladditions << " songs to songlist" << endl;
         cout << "songlist has a total of " << songlist.size() << " songs" << endl;
         songlist.sort(song_compare);
+
+        ofstream ofs;
+        ofs.open(string(CONFIG_LOCATION) + "library");
+        {
+            cereal::BinaryOutputArchive archive(ofs);
+            archive(*this);
+        }
+        ofs.close();
+    }
+
+    void add_mdir(string nmdir)
+    {
+        for (string i : mdirs)
+            if (nmdir == i)
+                return;
+        mdirs.push_back(nmdir);
+    }
+
+    void clear_mdir()
+    {
+        mdirs.clear();
     }
 
     int get_song_number(Song &s)
@@ -70,7 +114,9 @@ public:
     }
 
 private:
+    friend class cereal::access;
     int totaladditions;
+    list<string> mdirs; // music directories and single song files
 
     static bool song_compare(const Song &s1, const Song &s2)
     {
@@ -157,8 +203,22 @@ private:
                 ns.artist = tag->artist().toCString();
                 ns.duration = properties->length();
             }
-            songlist.push_back(ns);
+            add_song(ns);
             totaladditions++;
         }
+    }
+
+    void add_song(Song nsong)
+    {
+        for (Song s : songlist)
+            if (nsong == s)
+                return;
+        songlist.push_back(nsong);
+    }
+
+    template <class Archive>
+    void serialize(Archive &ar)
+    {
+        ar(songlist, mdirs);
     }
 };

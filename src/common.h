@@ -22,6 +22,12 @@ struct Song
                 s.trackNum == trackNum &&
                 s.album == album);
     }
+
+    template <class Archive>
+    void serialize(Archive &ar)
+    {
+        ar(path, duration, trackNum, album, artist, plays, name);
+    }
 };
 
 enum SongTag

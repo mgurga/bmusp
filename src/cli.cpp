@@ -33,7 +33,7 @@ public:
         else if (strcmp(argv[1], "next") == 0 || strcmp(argv[1], "prev") == 0 || strcmp(argv[1], "play") == 0 || strcmp(argv[1], "pause") == 0 || strcmp(argv[1], "toggle-pause") == 0 || strcmp(argv[1], "stop") == 0)
         {
             ofstream cmdfile;
-            cmdfile.open(CMDFILE_LOCATION);
+            cmdfile.open(string(CONFIG_LOCATION) + "bmuspcmd");
             cmdfile << argv[1];
             cmdfile.close();
         }
@@ -45,7 +45,7 @@ public:
                 return;
             }
             ofstream cmdfile;
-            cmdfile.open(CMDFILE_LOCATION);
+            cmdfile.open(string(CONFIG_LOCATION) + "bmuspcmd");
             cmdfile << argv[1] << endl;
             cmdfile << argv[2];
             cmdfile.close();
@@ -60,12 +60,12 @@ public:
 
     void check_command(Player *plr, Library *lib)
     {
-        ifstream cmdfile(CMDFILE_LOCATION);
+        ifstream cmdfile(string(CONFIG_LOCATION) + "bmuspcmd");
         if (cmdfile.is_open())
         {
             string cmd;
             getline(cmdfile, cmd);
-            remove(CMDFILE_LOCATION);
+            remove(string(string(CONFIG_LOCATION) + "bmuspcmd").c_str());
 
             if (cmd == "play")
             {

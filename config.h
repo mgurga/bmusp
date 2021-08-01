@@ -14,5 +14,5 @@
 #define SONG_HEIGHT 15
 #define VOLUME_SLIDER_WIDTH 75
 #define DEFAULT_VOLUME 50
-#define CMDFILE_LOCATION "bmuspcmd"
+#define CONFIG_LOCATION "" // just uses build directory, should end in slash
 #define FRAMES_BETWEEN_CMD_CHECK 10
