@@ -55,7 +55,7 @@ public:
 
     void play()
     {
-        if(q.size() != 0)
+        if (q.size() != 0)
             play(q.front());
     }
 
@@ -106,9 +106,9 @@ public:
 
     void jump_to(int seek)
     {
-        if(current_position() == seek)
+        if (current_position() == seek)
             return;
-        if(!is_playing())
+        if (!is_playing())
             return;
         Mix_SetMusicPosition(seek);
         int diff = current_position() - seek;
@@ -126,10 +126,25 @@ public:
     void add_to_queue(Song s)
     {
         q.push_back(s);
-        if(!is_playing()) {
+        if (!is_playing())
+        {
             playingq = true;
             play(q.front());
         }
+    }
+
+    int get_song_queue_num(Song s)
+    {
+        int i = 0;
+        for (Song qs : q)
+        {
+            if (qs == s)
+            {
+                return i;
+            }
+            i++;
+        }
+        return -1;
     }
 
     bool is_playing()
@@ -137,16 +152,20 @@ public:
         return (!paused && Mix_PlayingMusic() == 1);
     }
 
-    bool is_song_over() {
+    bool is_song_over()
+    {
         // cout << "queue size: " << q.size() << " playing q: " << (playingq ? "true" : "false") << endl;
         if (current_position() == song.duration)
         {
-            if(!q.empty() && playingq)
+            if (!q.empty() && playingq)
                 q.pop_front();
-            if(q.empty()) {
+            if (q.empty())
+            {
                 playingq = false;
                 stop();
-            } else {
+            }
+            else
+            {
                 play(q.front());
                 playingq = true;
                 return false;
@@ -159,6 +178,14 @@ public:
     void clear_queue()
     {
         q.clear();
+    }
+
+    bool has_queue()
+    {
+        if (q.size() != 0)
+            return true;
+        else
+            return false;
     }
 
     int get_volume()

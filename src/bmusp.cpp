@@ -42,7 +42,7 @@ string sec_to_minsec(int i)
     return fancyTimes;
 }
 
-string get_song_button_name(Song s)
+string get_song_button_name(Song s, Player *plr)
 {
     string out;
     char filler = SONG_TAG_FILLER_CHAR;
@@ -85,6 +85,19 @@ string get_song_button_name(Song s)
             f_dur.resize(song_tag_lengths[i], filler);
             out.append(f_dur);
             break;
+        }
+        case STATUS_ICON:
+        {
+            int sq = plr->get_song_queue_num(s);
+            string f_si;
+            if (plr->song == s)
+                f_si.append(">>");
+            else if (sq != -1)
+                f_si.append(">" + to_string(sq));
+            else
+                f_si.append("");
+            f_si.resize(song_tag_lengths[i], filler);
+            out.append(f_si);
         }
         }
 
@@ -189,7 +202,8 @@ int main(int argc, char *argv[])
             {
                 Song pSong = lib.get_song_at(lib.get_song_number(plr.song) - 1);
                 plr.clear_queue();
-                plr.play(pSong);
+                plr.stop();
+                plr.add_to_queue(pSong);
             }
         }
 
@@ -198,9 +212,18 @@ int main(int argc, char *argv[])
         {
             if (plr.is_playing())
             {
-                Song nSong = lib.get_song_at(lib.get_song_number(plr.song) + 1);
-                plr.clear_queue();
-                plr.play(nSong);
+                if (plr.has_queue())
+                {
+                    plr.jump_to(plr.song.duration);
+                    plr.is_song_over(); // force check if song over to quickly go to next song
+                }
+                else
+                {
+                    Song nSong = lib.get_song_at(lib.get_song_number(plr.song) + 1);
+                    plr.clear_queue();
+                    plr.stop();
+                    plr.add_to_queue(nSong);
+                }
             }
         }
 
@@ -241,24 +264,25 @@ int main(int argc, char *argv[])
         int songnum = 0;
         for (Song s : lib.songlist)
         {
-            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT - (songoptionsopen ? SONG_HEIGHT*3 : 0) && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
+            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT - (songoptionsopen ? SONG_HEIGHT * 3 : 0) && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
             {
                 Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
                 if (s == plr.song)
                     GuiSetStyle(BUTTON, BASE, 0x111155ff);
                 else
                     GuiSetStyle(BUTTON, BASE, 0x000000);
-                if (GuiButton(sbtn, get_song_button_name(s).c_str()))
+                if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
                 {
                     // cout << "playing " << s.name << endl;
-                    if (GetMouseY() > HEADER_HEIGHT && GetMouseY() < (songoptionsopen ? sHeight - SONG_HEIGHT*2 : sHeight))
+                    if (GetMouseY() > HEADER_HEIGHT && GetMouseY() < (songoptionsopen ? sHeight - SONG_HEIGHT * 2 : sHeight))
                     {
                         plr.clear_queue();
-                        plr.play(s);
+                        plr.stop();
+                        plr.add_to_queue(s);
                     }
                 }
                 // song right click
-                if(IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn))
+                if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn))
                 {
                     songoptionsopen = true;
                     selectedsong = s;
@@ -272,11 +296,13 @@ int main(int argc, char *argv[])
         if (songoptionsopen)
         {
             GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
-            GuiDrawRectangle({0, (float)sHeight - SONG_HEIGHT*2, (float)sWidth, SONG_HEIGHT*2}, 1, BLUE, BLACK);
-            if(GuiButton({0, (float)sHeight - SONG_HEIGHT*2, SONG_HEIGHT*2, SONG_HEIGHT*2}, "X")) {
+            GuiDrawRectangle({0, (float)sHeight - SONG_HEIGHT * 2, (float)sWidth, SONG_HEIGHT * 2}, 1, BLUE, BLACK);
+            if (GuiButton({0, (float)sHeight - SONG_HEIGHT * 2, SONG_HEIGHT * 2, SONG_HEIGHT * 2}, "X"))
+            {
                 songoptionsopen = false;
             }
-            if(GuiButton({SONG_HEIGHT*2, (float)sHeight - SONG_HEIGHT*2, 100, SONG_HEIGHT*2}, "Add to queue")) {
+            if (GuiButton({SONG_HEIGHT * 2, (float)sHeight - SONG_HEIGHT * 2, 100, SONG_HEIGHT * 2}, "Add to queue"))
+            {
                 songoptionsopen = false;
                 plr.add_to_queue(selectedsong);
             }

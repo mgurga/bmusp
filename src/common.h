@@ -36,5 +36,6 @@ enum SongTag
     ALBUM,
     TRACKNUM,
     NAME,
-    DURATION
+    DURATION,
+    STATUS_ICON // should not be used as a song tag, only used for tab info
 };
