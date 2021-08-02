@@ -10,6 +10,7 @@
 #endif
 
 #include <ctime>
+#include <list>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_mixer.h"
 
@@ -23,7 +24,7 @@ public:
 
     Player()
     {
-        int audio_rate = MIX_DEFAULT_FREQUENCY;
+        int audio_rate = 44100;
         Uint16 audio_format = MIX_DEFAULT_FORMAT;
         int audio_channels = MIX_DEFAULT_CHANNELS;
         int audio_buffers = 4096;
@@ -50,6 +51,12 @@ public:
 
         Mix_VolumeMusic(DEFAULT_VOLUME);
         vol = DEFAULT_VOLUME;
+    }
+
+    void play()
+    {
+        if(q.size() != 0)
+            play(q.front());
     }
 
     void play(Song s)
@@ -116,18 +123,42 @@ public:
         paused = true;
     }
 
+    void add_to_queue(Song s)
+    {
+        q.push_back(s);
+        if(!is_playing()) {
+            playingq = true;
+            play(q.front());
+        }
+    }
+
     bool is_playing()
     {
         return (!paused && Mix_PlayingMusic() == 1);
     }
 
     bool is_song_over() {
+        // cout << "queue size: " << q.size() << " playing q: " << (playingq ? "true" : "false") << endl;
         if (current_position() == song.duration)
         {
-            stop();
+            if(!q.empty() && playingq)
+                q.pop_front();
+            if(q.empty()) {
+                playingq = false;
+                stop();
+            } else {
+                play(q.front());
+                playingq = true;
+                return false;
+            }
             return true;
         }
         return false;
+    }
+
+    void clear_queue()
+    {
+        q.clear();
     }
 
     int get_volume()
@@ -147,4 +178,6 @@ private:
     time_t pausestart;
     double pausepos;
     int vol;
+    list<Song> q;
+    bool playingq = false;
 };

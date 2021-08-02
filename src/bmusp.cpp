@@ -29,6 +29,7 @@ using namespace std;
 SongTag song_tag_order[] = SONG_TAG_ORDER;
 int song_tag_lengths[] = SONG_TAG_LENGTHS;
 string song_tag_sepatator = SONG_TAG_SEPARATOR;
+int totalwidth = 0;
 
 string sec_to_minsec(int i)
 {
@@ -90,7 +91,7 @@ string get_song_button_name(Song s)
         out.append(song_tag_sepatator);
     }
 
-    return out;
+    return out.substr(0, out.length() - 1);
 }
 
 int main(int argc, char *argv[])
@@ -107,6 +108,8 @@ int main(int argc, char *argv[])
 
     int fileddnum = 0;
     bool fileddedit = false;
+    bool songoptionsopen = false;
+    Song selectedsong;
     int sWidth, sHeight;
     Rectangle panelRec = {0, 0, 0, 0};
     Rectangle panelContentRec = {0, 0, 1000, 1000};
@@ -126,7 +129,6 @@ int main(int argc, char *argv[])
     else
         cout << "loaded existing library" << endl;
 
-    int totalwidth = 0;
     for (int i : song_tag_lengths)
     {
         totalwidth += i;
@@ -186,6 +188,7 @@ int main(int argc, char *argv[])
             if (plr.is_playing())
             {
                 Song pSong = lib.get_song_at(lib.get_song_number(plr.song) - 1);
+                plr.clear_queue();
                 plr.play(pSong);
             }
         }
@@ -196,6 +199,7 @@ int main(int argc, char *argv[])
             if (plr.is_playing())
             {
                 Song nSong = lib.get_song_at(lib.get_song_number(plr.song) + 1);
+                plr.clear_queue();
                 plr.play(nSong);
             }
         }
@@ -237,18 +241,46 @@ int main(int argc, char *argv[])
         int songnum = 0;
         for (Song s : lib.songlist)
         {
-            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
-                if (GuiButton({0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT}, get_song_button_name(s).c_str()))
+            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT - (songoptionsopen ? SONG_HEIGHT*3 : 0) && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
+            {
+                Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
+                if (s == plr.song)
+                    GuiSetStyle(BUTTON, BASE, 0x111155ff);
+                else
+                    GuiSetStyle(BUTTON, BASE, 0x000000);
+                if (GuiButton(sbtn, get_song_button_name(s).c_str()))
                 {
                     // cout << "playing " << s.name << endl;
-                    if (GetMouseY() > HEADER_HEIGHT)
+                    if (GetMouseY() > HEADER_HEIGHT && GetMouseY() < (songoptionsopen ? sHeight - SONG_HEIGHT*2 : sHeight))
                     {
+                        plr.clear_queue();
                         plr.play(s);
                     }
                 }
+                // song right click
+                if(IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn))
+                {
+                    songoptionsopen = true;
+                    selectedsong = s;
+                }
+            }
             songnum++;
         }
         EndScissorMode();
+
+        // song options
+        if (songoptionsopen)
+        {
+            GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
+            GuiDrawRectangle({0, (float)sHeight - SONG_HEIGHT*2, (float)sWidth, SONG_HEIGHT*2}, 1, BLUE, BLACK);
+            if(GuiButton({0, (float)sHeight - SONG_HEIGHT*2, SONG_HEIGHT*2, SONG_HEIGHT*2}, "X")) {
+                songoptionsopen = false;
+            }
+            if(GuiButton({SONG_HEIGHT*2, (float)sHeight - SONG_HEIGHT*2, 100, SONG_HEIGHT*2}, "Add to queue")) {
+                songoptionsopen = false;
+                plr.add_to_queue(selectedsong);
+            }
+        }
 
         // file dropdown
         Vector2 mouse = GetMousePosition();
