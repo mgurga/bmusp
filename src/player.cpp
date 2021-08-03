@@ -182,7 +182,7 @@ public:
 
     bool has_queue()
     {
-        if (q.size() != 0)
+        if (q.size() > 1)
             return true;
         else
             return false;

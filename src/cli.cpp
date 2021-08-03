@@ -79,7 +79,7 @@ public:
             {
                 if (plr->is_playing())
                 {
-                    Song nSong = lib->get_song_at(lib->get_song_number(plr->song) + 1);
+                    Song nSong = lib->get_song_at(0, lib->get_song_number(0, plr->song) + 1);
                     plr->play(nSong);
                 }
             }
@@ -87,7 +87,7 @@ public:
             {
                 if (plr->is_playing())
                 {
-                    Song pSong = lib->get_song_at(lib->get_song_number(plr->song) - 1);
+                    Song pSong = lib->get_song_at(0, lib->get_song_number(0, plr->song) - 1);
                     plr->play(pSong);
                 }
             }

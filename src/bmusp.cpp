@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
     bool songoptionsopen = false;
     Song selectedsong;
     int sWidth, sHeight;
+    int playlist = 0;
     Rectangle panelRec = {0, 0, 0, 0};
     Rectangle panelContentRec = {0, 0, 1000, 1000};
     Vector2 panelScroll = {0, 0};
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
             dir = regex_replace(dir, regex("\\%HOME%"), string(getenv("HOME")));
             lib.add_mdir(dir);
         }
-        lib.populate();
+        lib.populate(playlist, true);
     }
     else
         cout << "loaded existing library" << endl;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
         sHeight = GetScreenHeight();
         if (plr.is_song_over())
         {
-            Song nSong = lib.get_song_at(lib.get_song_number(plr.song) + 1);
+            Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
             plr.play(nSong);
         }
 
@@ -176,7 +177,7 @@ int main(int argc, char *argv[])
 
         // set scrollbar variables
         panelRec = {0, HEADER_HEIGHT, (float)sWidth, (float)sHeight - HEADER_HEIGHT};
-        panelContentRec = {0, HEADER_HEIGHT, (float)sWidth - 12, (float)(lib.songlist.size()) * (SONG_HEIGHT + 1)};
+        panelContentRec = {0, HEADER_HEIGHT, (float)sWidth - 12, (float)(lib.get_playlist_songs(playlist)->size()) * (SONG_HEIGHT + 1)};
         Rectangle view = GuiScrollPanel(panelRec, panelContentRec, &panelScroll);
 
         // play pause button
@@ -200,7 +201,7 @@ int main(int argc, char *argv[])
         {
             if (plr.is_playing())
             {
-                Song pSong = lib.get_song_at(lib.get_song_number(plr.song) - 1);
+                Song pSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) - 1);
                 plr.clear_queue();
                 plr.stop();
                 plr.add_to_queue(pSong);
@@ -219,7 +220,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    Song nSong = lib.get_song_at(lib.get_song_number(plr.song) + 1);
+                    Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
                     plr.clear_queue();
                     plr.stop();
                     plr.add_to_queue(nSong);
@@ -237,23 +238,37 @@ int main(int argc, char *argv[])
             string pbSong = "";
             pbSong.append(to_string(plr.song.trackNum) + ". ");
             pbSong.append(plr.song.name);
-            float pos = GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
+            float pos = GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
                                      pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
             plr.jump_to(pos);
         }
         else
         {
             string status = plr.paused ? "Paused" : "Stopped";
-            GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, status.c_str(),
+            GuiSliderPro({95, 0, (float)sWidth - 95 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, status.c_str(),
                          "0:00/0:00", 1, 0, 2, 10);
         }
 
         // volume slider
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
-        float vol = GuiSliderPro({(float)sWidth - VOLUME_SLIDER_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "",
+        float vol = GuiSliderPro({(float)sWidth - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "",
                                  to_string(plr.get_volume()).c_str(), plr.get_volume(), 0, 100, 5);
-        GuiLabel({(float)sWidth - VOLUME_SLIDER_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "#122#");
+        GuiLabel({(float)sWidth - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "#122#");
         plr.set_volume(vol);
+
+        // playlist tab buttons
+        for (int i = 0; i < NUM_OF_PLAYLISTS; i++)
+        {
+            string pltabname;
+            if (i == 0)
+                pltabname = "A";
+            else
+                pltabname = to_string(i);
+            if (GuiButton({(float)sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH), 0, PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, pltabname.c_str()))
+            {
+                playlist = i;
+            }
+        }
 
         // draw song list
         BeginScissorMode(0, HEADER_HEIGHT, sWidth, sHeight - HEADER_HEIGHT);
@@ -262,7 +277,7 @@ int main(int argc, char *argv[])
         GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
 
         int songnum = 0;
-        for (Song s : lib.songlist)
+        for (Song s : *lib.get_playlist_songs(playlist))
         {
             if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT - (songoptionsopen ? SONG_HEIGHT * 3 : 0) && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
             {
@@ -306,6 +321,30 @@ int main(int argc, char *argv[])
                 songoptionsopen = false;
                 plr.add_to_queue(selectedsong);
             }
+
+            for (int i = 0; i < NUM_OF_PLAYLISTS / 2; i++)
+            {
+                string plbtn = "";
+                if (i == 0)
+                    plbtn.append("A");
+                else
+                    plbtn.append(to_string(i));
+                if (playlist != i)
+                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + (i * SONG_HEIGHT), (float)sHeight - SONG_HEIGHT * 2, SONG_HEIGHT, SONG_HEIGHT}, plbtn.c_str()))
+                    {
+                        lib.add_song_to_playlist(i, selectedsong);
+                        songoptionsopen = false;
+                    }
+            }
+            for (int i = NUM_OF_PLAYLISTS / 2; i < NUM_OF_PLAYLISTS; i++)
+            {
+                if (playlist != i)
+                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + ((i - (NUM_OF_PLAYLISTS / 2)) * SONG_HEIGHT), (float)sHeight - SONG_HEIGHT, SONG_HEIGHT, SONG_HEIGHT}, to_string(i).c_str()))
+                    {
+                        lib.add_song_to_playlist(i, selectedsong);
+                        songoptionsopen = false;
+                    }
+            }
         }
 
         // file dropdown
@@ -326,7 +365,7 @@ int main(int argc, char *argv[])
                 }
                 auto mpath = tinyfd_openFileDialog("select music files", NULL, lib.filters.size(), &f[0], "", 1);
                 lib.add_mdir(mpath);
-                lib.populate();
+                lib.populate(playlist);
                 break;
             }
             case 2:
@@ -336,13 +375,13 @@ int main(int argc, char *argv[])
                 {
                     cout << "adding music folder: " << mpath << endl;
                     lib.add_mdir(mpath);
-                    lib.populate();
+                    lib.populate(playlist);
                 }
                 break;
             }
             case 3:
                 lib.clear_mdir();
-                lib.populate();
+                lib.populate(playlist, true);
                 break;
             case 4:
                 exit(0);

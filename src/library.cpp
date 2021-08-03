@@ -13,6 +13,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/list.hpp>
+#include <cereal/types/complex.hpp>
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -29,7 +30,7 @@ using namespace std;
 class Library
 {
 public:
-    list<Song> songlist; // generated from music directories
+    list<list<Song>> playlists;
     const vector<string> filters = {"*.mp3", "*.flac", "*.m4a", "*.ogg", "*.wav"};
 
     bool load_library()
@@ -45,15 +46,24 @@ public:
             else
                 return false;
         }
-        songlist = newlib.songlist;
+        playlists = newlib.playlists;
         mdirs = newlib.mdirs;
         return true;
     }
 
-    void populate()
+    void populate(int plnum, bool clearplaylists = false)
     {
+        cout << "populating" << endl;
         totaladditions = 0;
-        songlist.clear();
+        if (clearplaylists)
+        {
+            playlists.clear();
+            for (int i = 0; i < NUM_OF_PLAYLISTS; i++)
+            {
+                list<Song> ls;
+                playlists.push_front(ls);
+            }
+        }
         cout << "total music directories: " << mdirs.size() << endl;
         for (auto const path : mdirs)
         {
@@ -61,18 +71,22 @@ public:
             if (filesystem::is_regular_file(path))
             {
                 cout << "added single file" << path << endl;
-                add_regular_file(path);
+                add_regular_file(plnum, path);
             }
             else
             {
                 cout << "starting recursive search on: " << path << endl;
-                populate_rec(path, 0);
+                populate_rec(plnum, path, 0);
             }
         }
         // cout << "added " << totaladditions << " songs to songlist" << endl;
-        cout << "songlist has a total of " << songlist.size() << " songs" << endl;
-        songlist.sort(song_compare);
+        cout << "songlist has a total of " << get_playlist_songs(0)->size() << " songs" << endl;
+        get_playlist_songs(0)->sort(song_compare);
+        save_library();
+    }
 
+    void save_library()
+    {
         ofstream ofs;
         ofs.open(string(CONFIG_LOCATION) + "library");
         {
@@ -95,10 +109,10 @@ public:
         mdirs.clear();
     }
 
-    int get_song_number(Song &s)
+    int get_song_number(int plnum, Song &s)
     {
-        list<Song>::iterator it = songlist.begin();
-        for (int i = 0; i < songlist.size(); i++)
+        list<Song>::iterator it = get_playlist_songs(plnum)->begin();
+        for (int i = 0; i < get_playlist_songs(plnum)->size(); i++)
         {
             if (s == *it)
                 return i;
@@ -106,11 +120,27 @@ public:
         }
     }
 
-    Song get_song_at(int n)
+    Song get_song_at(int plnum, int n)
     {
-        list<Song>::iterator it = songlist.begin();
+        list<Song>::iterator it = get_playlist_songs(plnum)->begin();
         advance(it, n);
         return *it;
+    }
+
+    void add_song_to_playlist(int plnum, Song s)
+    {
+        list<list<Song>>::iterator plit = playlists.begin();
+        advance(plit, plnum);
+        plit->push_front(s);
+        plit->sort(song_compare);
+        save_library();
+    }
+
+    list<list<Song>>::iterator get_playlist_songs(int plnum)
+    {
+        list<list<Song>>::iterator plit = playlists.begin();
+        advance(plit, plnum);
+        return plit;
     }
 
 private:
@@ -156,7 +186,7 @@ private:
         return true;
     }
 
-    void populate_rec(string path, int depth)
+    void populate_rec(int plnum, string path, int depth)
     {
         if (depth > 5)
             return;
@@ -166,16 +196,16 @@ private:
         {
             if (entry.is_directory())
             {
-                populate_rec(entry.path(), depth + 1);
+                populate_rec(plnum, entry.path(), depth + 1);
             }
             else if (entry.is_regular_file())
             {
-                add_regular_file(entry.path());
+                add_regular_file(plnum, entry.path());
             }
         }
     }
 
-    void add_regular_file(string path)
+    void add_regular_file(int plnum, string path)
     {
         auto entry = filesystem::directory_entry(path);
         string ext = entry.path().filename().extension();
@@ -203,22 +233,22 @@ private:
                 ns.artist = tag->artist().toCString();
                 ns.duration = properties->length();
             }
-            add_song(ns);
+            add_song(plnum, ns);
             totaladditions++;
         }
     }
 
-    void add_song(Song nsong)
+    void add_song(int plnum, Song nsong)
     {
-        for (Song s : songlist)
+        for (Song s : *get_playlist_songs(plnum))
             if (nsong == s)
                 return;
-        songlist.push_back(nsong);
+        get_playlist_songs(plnum)->push_back(nsong);
     }
 
     template <class Archive>
     void serialize(Archive &ar)
     {
-        ar(songlist, mdirs);
+        ar(playlists, mdirs);
     }
 };
