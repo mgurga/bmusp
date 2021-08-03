@@ -93,14 +93,7 @@ public:
             }
             else if (cmd == "toggle-pause")
             {
-                if (plr->is_playing())
-                {
-                    plr->pause();
-                }
-                else
-                {
-                    plr->unpause();
-                }
+                plr->toggle_pause();
             }
             else if (cmd == "stop")
             {

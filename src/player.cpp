@@ -175,6 +175,18 @@ public:
         return false;
     }
 
+    void toggle_pause()
+    {
+        if (is_playing())
+        {
+            pause();
+        }
+        else
+        {
+            unpause();
+        }
+    }
+
     void clear_queue()
     {
         q.clear();

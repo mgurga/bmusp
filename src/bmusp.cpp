@@ -184,16 +184,7 @@ int main(int argc, char *argv[])
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
         if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#132#" : "#131#"))
         {
-            if (plr.is_playing())
-            {
-                plr.pause();
-                // cout << "pausing" << endl;
-            }
-            else
-            {
-                plr.unpause();
-                // cout << "resuming" << endl;
-            }
+            plr.toggle_pause();
         }
 
         // previous button
