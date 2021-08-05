@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
     bool fileddedit = false;
     bool songoptionsopen = false;
     Song selectedsong;
+    int songoptiony;
     int sWidth, sHeight;
     int playlist = 0;
     Rectangle panelRec = {0, 0, 0, 0};
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
         int songnum = 0;
         for (Song s : *lib.get_playlist_songs(playlist))
         {
-            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT - (songoptionsopen ? SONG_HEIGHT * 3 : 0) && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
+            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
             {
                 Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
                 if (s == plr.song)
@@ -280,7 +281,7 @@ int main(int argc, char *argv[])
                 if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
                 {
                     // cout << "playing " << s.name << endl;
-                    if (GetMouseY() > HEADER_HEIGHT && GetMouseY() < (songoptionsopen ? sHeight - SONG_HEIGHT * 2 : sHeight))
+                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen)
                     {
                         plr.clear_queue();
                         plr.stop();
@@ -292,22 +293,25 @@ int main(int argc, char *argv[])
                 {
                     songoptionsopen = true;
                     selectedsong = s;
+                    songoptiony = sbtn.y + SONG_HEIGHT;
                 }
             }
             songnum++;
         }
+        GuiSetStyle(BUTTON, BASE, 0x000000);
         EndScissorMode();
 
         // song options
         if (songoptionsopen)
         {
+            // songoptiony = sHeight - SONG_HEIGHT * 2;
             GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
-            GuiDrawRectangle({0, (float)sHeight - SONG_HEIGHT * 2, (float)sWidth, SONG_HEIGHT * 2}, 1, BLUE, BLACK);
-            if (GuiButton({0, (float)sHeight - SONG_HEIGHT * 2, SONG_HEIGHT * 2, SONG_HEIGHT * 2}, "X"))
+            GuiDrawRectangle({0, (float)songoptiony, (float)sWidth, SONG_HEIGHT * 2}, 1, BLUE, BLACK);
+            if (GuiButton({0, (float)songoptiony, SONG_HEIGHT * 2, SONG_HEIGHT * 2}, "X"))
             {
                 songoptionsopen = false;
             }
-            if (GuiButton({SONG_HEIGHT * 2, (float)sHeight - SONG_HEIGHT * 2, 100, SONG_HEIGHT * 2}, "Add to queue"))
+            if (GuiButton({SONG_HEIGHT * 2, (float)songoptiony, 100, SONG_HEIGHT * 2}, "Add to queue"))
             {
                 songoptionsopen = false;
                 plr.add_to_queue(selectedsong);
@@ -321,7 +325,7 @@ int main(int argc, char *argv[])
                 else
                     plbtn.append(to_string(i));
                 if (playlist != i)
-                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + (i * SONG_HEIGHT), (float)sHeight - SONG_HEIGHT * 2, SONG_HEIGHT, SONG_HEIGHT}, plbtn.c_str()))
+                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + (i * SONG_HEIGHT), (float)songoptiony, SONG_HEIGHT, SONG_HEIGHT}, plbtn.c_str()))
                     {
                         lib.add_song_to_playlist(i, selectedsong);
                         songoptionsopen = false;
@@ -330,7 +334,7 @@ int main(int argc, char *argv[])
             for (int i = NUM_OF_PLAYLISTS / 2; i < NUM_OF_PLAYLISTS; i++)
             {
                 if (playlist != i)
-                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + ((i - (NUM_OF_PLAYLISTS / 2)) * SONG_HEIGHT), (float)sHeight - SONG_HEIGHT, SONG_HEIGHT, SONG_HEIGHT}, to_string(i).c_str()))
+                    if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + ((i - (NUM_OF_PLAYLISTS / 2)) * SONG_HEIGHT), (float)songoptiony + SONG_HEIGHT, SONG_HEIGHT, SONG_HEIGHT}, to_string(i).c_str()))
                     {
                         lib.add_song_to_playlist(i, selectedsong);
                         songoptionsopen = false;
@@ -371,8 +375,11 @@ int main(int argc, char *argv[])
                 break;
             }
             case 3:
-                lib.clear_mdir();
-                lib.populate(playlist, true);
+                if (tinyfd_messageBox("clear song list?", "are you sure you want to clear all playlists?", "yesno", "warning", 0) == 1)
+                {
+                    lib.clear_mdir();
+                    lib.populate(playlist, true);
+                }
                 break;
             case 4:
                 exit(0);
