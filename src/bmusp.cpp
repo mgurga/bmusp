@@ -317,6 +317,7 @@ int main(int argc, char *argv[])
                 plr.add_to_queue(selectedsong);
             }
 
+            // playlist buttons
             for (int i = 0; i < NUM_OF_PLAYLISTS / 2; i++)
             {
                 string plbtn = "";
@@ -339,6 +340,13 @@ int main(int argc, char *argv[])
                         lib.add_song_to_playlist(i, selectedsong);
                         songoptionsopen = false;
                     }
+            }
+
+            // delete song button
+            if(GuiButton({SONG_HEIGHT * 2 + 100 + (NUM_OF_PLAYLISTS / 2) * SONG_HEIGHT, (float)songoptiony, 60, SONG_HEIGHT * 2}, "Remove"))
+            {
+                songoptionsopen = false;
+                lib.remove_song_from_playlist(playlist, selectedsong);
             }
         }
 

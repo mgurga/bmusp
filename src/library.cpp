@@ -136,6 +136,11 @@ public:
         save_library();
     }
 
+    void remove_song_from_playlist(int plnum, Song s){
+        list<list<Song>>::iterator plit = get_playlist_songs(plnum);
+        plit->remove(s);
+    }
+
     list<list<Song>>::iterator get_playlist_songs(int plnum)
     {
         list<list<Song>>::iterator plit = playlists.begin();
