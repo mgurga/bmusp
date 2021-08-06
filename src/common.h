@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <ostream>
 
 struct Song
 {
@@ -38,4 +39,13 @@ enum SongTag
     NAME,
     DURATION,
     STATUS_ICON // should not be used as a song tag, only used for tab info
+};
+
+enum SongOption
+{
+    NONE,
+    EXIT,
+    ADD_TO_QUEUE,
+    ADD_TO_PLAYLIST,
+    REMOVE
 };

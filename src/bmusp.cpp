@@ -124,6 +124,9 @@ int main(int argc, char *argv[])
     bool songoptionsopen = false;
     Song selectedsong;
     int songoptiony;
+    bool multiss = false;
+    int multistartsong = -1;
+    int multiendsong = -1;
     int sWidth, sHeight;
     int playlist = 0;
     Rectangle panelRec = {0, 0, 0, 0};
@@ -276,23 +279,33 @@ int main(int argc, char *argv[])
                 Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
                 if (s == plr.song)
                     GuiSetStyle(BUTTON, BASE, 0x111155ff);
+                else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
+                    GuiSetStyle(BUTTON, BASE, 0x552200ff);
                 else
-                    GuiSetStyle(BUTTON, BASE, 0x000000);
+                    GuiSetStyle(BUTTON, BASE, 0x000000ff);
                 if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
                 {
-                    // cout << "playing " << s.name << endl;
-                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen)
+                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss)
                     {
+                        cout << "playing " << s.name << endl;
                         plr.clear_queue();
                         plr.stop();
                         plr.add_to_queue(s);
                     }
                 }
                 // song right click
-                if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn))
+                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && multistartsong == -1)
                 {
                     songoptionsopen = true;
                     selectedsong = s;
+                    songoptiony = sbtn.y + SONG_HEIGHT;
+                    multistartsong = songnum;
+                }
+                else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && !multiss && songoptionsopen)
+                {
+                    // second right click
+                    multiss = true;
+                    multiendsong = songnum;
                     songoptiony = sbtn.y + SONG_HEIGHT;
                 }
             }
@@ -301,21 +314,22 @@ int main(int argc, char *argv[])
         GuiSetStyle(BUTTON, BASE, 0x000000);
         EndScissorMode();
 
+        // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
+
         // song options
         if (songoptionsopen)
         {
             // songoptiony = sHeight - SONG_HEIGHT * 2;
+            SongOption selectedoption = NONE;
+            int playlistbtn;
+
             GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
             GuiDrawRectangle({0, (float)songoptiony, (float)sWidth, SONG_HEIGHT * 2}, 1, BLUE, BLACK);
             if (GuiButton({0, (float)songoptiony, SONG_HEIGHT * 2, SONG_HEIGHT * 2}, "X"))
-            {
-                songoptionsopen = false;
-            }
+                selectedoption = EXIT;
+
             if (GuiButton({SONG_HEIGHT * 2, (float)songoptiony, 100, SONG_HEIGHT * 2}, "Add to queue"))
-            {
-                songoptionsopen = false;
-                plr.add_to_queue(selectedsong);
-            }
+                selectedoption = ADD_TO_QUEUE;
 
             // playlist buttons
             for (int i = 0; i < NUM_OF_PLAYLISTS / 2; i++)
@@ -328,8 +342,8 @@ int main(int argc, char *argv[])
                 if (playlist != i)
                     if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + (i * SONG_HEIGHT), (float)songoptiony, SONG_HEIGHT, SONG_HEIGHT}, plbtn.c_str()))
                     {
-                        lib.add_song_to_playlist(i, selectedsong);
-                        songoptionsopen = false;
+                        selectedoption = ADD_TO_PLAYLIST;
+                        playlistbtn = i;
                     }
             }
             for (int i = NUM_OF_PLAYLISTS / 2; i < NUM_OF_PLAYLISTS; i++)
@@ -337,17 +351,46 @@ int main(int argc, char *argv[])
                 if (playlist != i)
                     if (GuiButton({(float)SONG_HEIGHT * 2 + 100 + ((i - (NUM_OF_PLAYLISTS / 2)) * SONG_HEIGHT), (float)songoptiony + SONG_HEIGHT, SONG_HEIGHT, SONG_HEIGHT}, to_string(i).c_str()))
                     {
-                        lib.add_song_to_playlist(i, selectedsong);
-                        songoptionsopen = false;
+                        selectedoption = ADD_TO_PLAYLIST;
+                        playlistbtn = i;
                     }
             }
 
             // delete song button
-            if(GuiButton({SONG_HEIGHT * 2 + 100 + (NUM_OF_PLAYLISTS / 2) * SONG_HEIGHT, (float)songoptiony, 60, SONG_HEIGHT * 2}, "Remove"))
+            if (GuiButton({SONG_HEIGHT * 2 + 100 + (NUM_OF_PLAYLISTS / 2) * SONG_HEIGHT, (float)songoptiony, 60, SONG_HEIGHT * 2}, "Remove"))
             {
-                songoptionsopen = false;
-                lib.remove_song_from_playlist(playlist, selectedsong);
+                selectedoption = REMOVE;
             }
+
+            switch (selectedoption)
+            {
+            case EXIT:
+                break;
+            case ADD_TO_QUEUE:
+                if (multiss)
+                    for (int i = multistartsong; i <= multiendsong; i++)
+                        plr.add_to_queue(lib.get_song_at(playlist, i));
+                else
+                    plr.add_to_queue(selectedsong);
+                plr.play();
+                break;
+            case ADD_TO_PLAYLIST:
+                if (multiss)
+                    for (int i = multistartsong; i <= multiendsong; i++)
+                        lib.add_song_to_playlist(playlistbtn, lib.get_song_at(playlist, i));
+                else
+                    lib.add_song_to_playlist(playlistbtn, selectedsong);
+                break;
+            case REMOVE:
+                if (multiss)
+                    for (int i = multistartsong; i <= multiendsong; i++)
+                        lib.remove_song_from_playlist(playlist, lib.get_song_at(playlist, i));
+                else
+                    lib.remove_song_from_playlist(playlist, selectedsong);
+                break;
+            }
+            if (selectedoption != NONE)
+                songoptionsopen = false, multiss = false, multistartsong = -1, multiendsong = -1;
         }
 
         // file dropdown
