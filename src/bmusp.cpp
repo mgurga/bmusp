@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
     bool multiss = false;
     int multistartsong = -1;
     int multiendsong = -1;
+    list<Song> multiselsongs;
     int sWidth, sHeight;
     int playlist = 0;
     Rectangle panelRec = {0, 0, 0, 0};
@@ -270,7 +271,8 @@ int main(int argc, char *argv[])
         GuiGrid((Rectangle){panelRec.x + panelScroll.x, panelRec.y + panelScroll.y, panelContentRec.width, panelContentRec.height}, 16, 3);
         GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
-
+        
+        multiselsongs.clear();
         int songnum = 0;
         for (Song s : *lib.get_playlist_songs(playlist))
         {
@@ -280,7 +282,10 @@ int main(int argc, char *argv[])
                 if (s == plr.song)
                     GuiSetStyle(BUTTON, BASE, 0x111155ff);
                 else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
+                {
                     GuiSetStyle(BUTTON, BASE, 0x552200ff);
+                    multiselsongs.push_back(s);
+                }
                 else
                     GuiSetStyle(BUTTON, BASE, 0x000000ff);
                 if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
@@ -376,15 +381,16 @@ int main(int argc, char *argv[])
                 break;
             case ADD_TO_PLAYLIST:
                 if (multiss)
-                    for (int i = multistartsong; i <= multiendsong; i++)
-                        lib.add_song_to_playlist(playlistbtn, lib.get_song_at(playlist, i));
+                    for (Song s : multiselsongs)
+                        lib.add_song_to_playlist(playlistbtn, s);
                 else
                     lib.add_song_to_playlist(playlistbtn, selectedsong);
                 break;
             case REMOVE:
                 if (multiss)
-                    for (int i = multistartsong; i <= multiendsong; i++)
-                        lib.remove_song_from_playlist(playlist, lib.get_song_at(playlist, i));
+                    for (Song s : multiselsongs)
+                        // cout << "removing: " <<lib.get_song_at(playlist, i).name << endl;
+                        lib.remove_song_from_playlist(playlist, s);
                 else
                     lib.remove_song_from_playlist(playlist, selectedsong);
                 break;
