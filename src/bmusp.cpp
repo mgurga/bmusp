@@ -130,9 +130,10 @@ int main(int argc, char *argv[])
     list<Song> multiselsongs;
     int sWidth, sHeight;
     int playlist = 0;
+    int scroll = 0;
+    int scrollpos = 0;
     Rectangle panelRec = {0, 0, 0, 0};
     Rectangle panelContentRec = {0, 0, 1000, 1000};
-    Vector2 panelScroll = {0, 0};
 
     if (!lib.load_library())
     {
@@ -152,9 +153,10 @@ int main(int argc, char *argv[])
     {
         totalwidth += i;
     }
+    totalwidth += sizeof(song_tag_lengths) / sizeof(song_tag_lengths[0]) - 1;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow((totalwidth * 8) + 15, 450, "bmusp");
+    InitWindow(((totalwidth - 2) * 8), 450, "bmusp");
     GuiLoadStyle("assets/cyber.rgs");
     SetTargetFPS(60);
 
@@ -180,11 +182,63 @@ int main(int argc, char *argv[])
         if (fileddedit)
             GuiLock();
 
-        // set scrollbar variables
-        panelRec = {0, HEADER_HEIGHT, (float)sWidth, (float)sHeight - HEADER_HEIGHT};
-        panelContentRec = {0, HEADER_HEIGHT, (float)sWidth - 12, (float)(lib.get_playlist_songs(playlist)->size()) * (SONG_HEIGHT + 1)};
-        Rectangle view = GuiScrollPanel(panelRec, panelContentRec, &panelScroll);
+        // scrollbar stuff
+        scroll += GetMouseWheelMove() * 50;
 
+        // draw song list
+        GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
+        GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
+
+        multiselsongs.clear();
+        int songnum = 0;
+        for (Song s : *lib.get_playlist_songs(playlist))
+        {
+            if (songnum * (SONG_HEIGHT + 1) + scroll < sHeight && songnum * (SONG_HEIGHT + 1) + scroll + HEADER_HEIGHT > 0)
+            {
+                Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + HEADER_HEIGHT + scroll, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
+                if (s == plr.song)
+                    GuiSetStyle(BUTTON, BASE, 0x111155ff);
+                else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
+                {
+                    GuiSetStyle(BUTTON, BASE, 0x552200ff);
+                    multiselsongs.push_back(s);
+                }
+                else
+                    GuiSetStyle(BUTTON, BASE, 0x000000ff);
+                if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
+                {
+                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss)
+                    {
+                        cout << "playing " << s.name << endl;
+                        plr.clear_queue();
+                        plr.stop();
+                        plr.add_to_queue(s);
+                    }
+                }
+                // song right click
+                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && multistartsong == -1)
+                {
+                    songoptionsopen = true;
+                    selectedsong = s;
+                    songoptiony = sbtn.y + SONG_HEIGHT;
+                    multistartsong = songnum;
+                }
+                else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && !multiss && songoptionsopen)
+                {
+                    // second right click
+                    multiss = true;
+                    multiendsong = songnum;
+                    songoptiony = sbtn.y + SONG_HEIGHT;
+                }
+            }
+            songnum++;
+        }
+        GuiSetStyle(BUTTON, BASE, 0x000000);
+
+        scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight}, -scroll, 0, songnum * SONG_HEIGHT);
+        scroll = -scrollpos;
+
+        // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
         // play pause button
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
         if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#132#" : "#131#"))
@@ -265,61 +319,6 @@ int main(int argc, char *argv[])
                 playlist = i;
             }
         }
-
-        // draw song list
-        BeginScissorMode(0, HEADER_HEIGHT, sWidth, sHeight - HEADER_HEIGHT);
-        GuiGrid((Rectangle){panelRec.x + panelScroll.x, panelRec.y + panelScroll.y, panelContentRec.width, panelContentRec.height}, 16, 3);
-        GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
-        GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
-        
-        multiselsongs.clear();
-        int songnum = 0;
-        for (Song s : *lib.get_playlist_songs(playlist))
-        {
-            if (songnum * (SONG_HEIGHT + 1) + panelScroll.y < view.x + view.height + SONG_HEIGHT && songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT > view.x)
-            {
-                Rectangle sbtn = {0, (float)songnum * (SONG_HEIGHT + 1) + panelScroll.y + HEADER_HEIGHT, (float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), SONG_HEIGHT};
-                if (s == plr.song)
-                    GuiSetStyle(BUTTON, BASE, 0x111155ff);
-                else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
-                {
-                    GuiSetStyle(BUTTON, BASE, 0x552200ff);
-                    multiselsongs.push_back(s);
-                }
-                else
-                    GuiSetStyle(BUTTON, BASE, 0x000000ff);
-                if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
-                {
-                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss)
-                    {
-                        cout << "playing " << s.name << endl;
-                        plr.clear_queue();
-                        plr.stop();
-                        plr.add_to_queue(s);
-                    }
-                }
-                // song right click
-                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && multistartsong == -1)
-                {
-                    songoptionsopen = true;
-                    selectedsong = s;
-                    songoptiony = sbtn.y + SONG_HEIGHT;
-                    multistartsong = songnum;
-                }
-                else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && !multiss && songoptionsopen)
-                {
-                    // second right click
-                    multiss = true;
-                    multiendsong = songnum;
-                    songoptiony = sbtn.y + SONG_HEIGHT;
-                }
-            }
-            songnum++;
-        }
-        GuiSetStyle(BUTTON, BASE, 0x000000);
-        EndScissorMode();
-
-        // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
 
         // song options
         if (songoptionsopen)
