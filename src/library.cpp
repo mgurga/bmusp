@@ -109,6 +109,21 @@ public:
         mdirs.clear();
     }
 
+    list<Song> search_query(int plnum, string query)
+    {
+        list<Song> pls = *get_playlist_songs(plnum);
+        list<Song> out;
+        for (Song s : pls) {
+            if (to_lower(s.name).find(to_lower(query)) != string::npos ||
+                to_lower(s.album).find(to_lower(query)) != string::npos ||
+                to_lower(s.artist).find(to_lower(query)) != string::npos ||
+                to_string(s.trackNum).find(to_lower(query)) != string::npos )
+                out.push_front(s);
+        }
+        out.sort(song_compare);
+        return out;
+    }
+
     int get_song_number(int plnum, Song &s)
     {
         list<Song>::iterator it = get_playlist_songs(plnum)->begin();
@@ -153,6 +168,15 @@ private:
     friend class cereal::access;
     int totaladditions;
     list<string> mdirs; // music directories and single song files
+
+    string to_lower(string s)
+    {
+        for (auto& c : s)
+        {
+            c = std::tolower(c);
+        }
+        return s;
+    }
 
     static bool song_compare(const Song &s1, const Song &s2)
     {
