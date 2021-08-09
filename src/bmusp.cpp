@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
     bool multiss = false;
     int multistartsong = -1;
     int multiendsong = -1;
-    list<Song> multiselsongs;
     int sWidth, sHeight;
     int playlist = 0;
     int scroll = 0;
@@ -189,7 +188,6 @@ int main(int argc, char *argv[])
         GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiSetStyle(DEFAULT, TEXT_SIZE, 12);
 
-        multiselsongs.clear();
         int songnum = 0;
         for (Song s : (searchopen ? lib.search_query(playlist, searchtext) : *lib.get_playlist_songs(playlist)))
         {
@@ -201,7 +199,6 @@ int main(int argc, char *argv[])
                 else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
                 {
                     GuiSetStyle(BUTTON, BASE, 0x552200ff);
-                    multiselsongs.push_back(s);
                 }
                 else
                     GuiSetStyle(BUTTON, BASE, 0x000000ff);
@@ -235,7 +232,7 @@ int main(int argc, char *argv[])
         }
         GuiSetStyle(BUTTON, BASE, 0x000000);
 
-        scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * SONG_HEIGHT);
+        scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * (SONG_HEIGHT + 1));
         scroll = -scrollpos;
 
         // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
@@ -382,6 +379,16 @@ int main(int argc, char *argv[])
                 selectedoption = REMOVE;
             }
 
+            list<Song> multiselsongs;
+            int si = 0;
+            if(multiss)
+                for(Song s : *lib.get_playlist_songs(playlist))
+                {
+                    if(si >= multistartsong && si <= multiendsong)
+                        multiselsongs.push_back(s);
+                    si++;
+                }
+
             switch (selectedoption)
             {
             case EXIT:
@@ -401,10 +408,10 @@ int main(int argc, char *argv[])
                     lib.add_song_to_playlist(playlistbtn, selectedsong);
                 break;
             case REMOVE:
-                if (multiss)
+                if (multiss) {
                     for (Song s : multiselsongs)
-                        // cout << "removing: " <<lib.get_song_at(playlist, i).name << endl;
                         lib.remove_song_from_playlist(playlist, s);
+                }
                 else
                     lib.remove_song_from_playlist(playlist, selectedsong);
                 break;
