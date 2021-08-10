@@ -182,7 +182,10 @@ int main(int argc, char *argv[])
             GuiLock();
 
         // scrollbar stuff
-        scroll += GetMouseWheelMove() * 50;
+        if (GetMouseY() > HEADER_HEIGHT)
+            scroll += GetMouseWheelMove() * 50;
+        if (scroll > 0)
+            scroll = 0;
 
         // draw song list
         GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
@@ -206,7 +209,6 @@ int main(int argc, char *argv[])
                 {
                     if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss)
                     {
-                        cout << "playing " << s.name << endl;
                         plr.clear_queue();
                         plr.stop();
                         plr.add_to_queue(s);
@@ -238,13 +240,11 @@ int main(int argc, char *argv[])
         // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
         // play pause button
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_CENTER);
-        if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#132#" : "#131#"))
-        {
+        if (GuiButton({65, 0, 15, HEADER_HEIGHT}, plr.is_playing() ? "#132#" : "#131#") || (IsKeyPressed(KEY_SPACE)))
             plr.toggle_pause();
-        }
 
         // previous button
-        if (GuiButton({50, 0, 15, HEADER_HEIGHT}, "#129#"))
+        if (GuiButton({50, 0, 15, HEADER_HEIGHT}, "#129#") || (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_LEFT)))
         {
             if (plr.is_playing())
             {
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
         }
 
         // next button
-        if (GuiButton({80, 0, 15, HEADER_HEIGHT}, "#134#"))
+        if (GuiButton({80, 0, 15, HEADER_HEIGHT}, "#134#") || (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_RIGHT)))
         {
             if (plr.is_playing())
             {
@@ -276,6 +276,10 @@ int main(int argc, char *argv[])
         }
 
         // current song progress bar
+        if (IsKeyPressed(KEY_RIGHT))
+            plr.jump_to(plr.current_position() + 5);
+        if (IsKeyPressed(KEY_LEFT))
+            plr.jump_to(plr.current_position() - 5);
         string pbTime = sec_to_minsec(plr.current_position()) + "/" + sec_to_minsec(plr.song.duration);
         GuiSetStyle(PROGRESSBAR, TEXT_PADDING, 3);
         GuiSetStyle(SLIDER, SLIDER_RIGHT_TEXT_CONTAINED, 1);
@@ -298,6 +302,14 @@ int main(int argc, char *argv[])
             }
 
         // volume slider
+        if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_EQUAL))
+            plr.set_volume(plr.get_volume() + 10);
+        if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_MINUS))
+            plr.set_volume(plr.get_volume() - 10);
+        if (GetMouseY() < HEADER_HEIGHT && GetMouseX() > sWidth - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH - 18 && GetMouseWheelMove() > 0)
+            plr.set_volume(plr.get_volume() + 5);
+        if (GetMouseY() < HEADER_HEIGHT && GetMouseX() > sWidth - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH - 18 && GetMouseWheelMove() < 0)
+            plr.set_volume(plr.get_volume() - 5);
         GuiSetStyle(DEFAULT, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         float vol = GuiSliderPro({(float)sWidth - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH - 18, 0, VOLUME_SLIDER_WIDTH, HEADER_HEIGHT}, "",
                                  to_string(plr.get_volume()).c_str(), plr.get_volume(), 0, 100, 5);
@@ -305,7 +317,7 @@ int main(int argc, char *argv[])
         plr.set_volume(vol);
 
         // search button
-        if (GuiButton({(float)sWidth - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH - 18, 0, 18, HEADER_HEIGHT}, "#42#"))
+        if (GuiButton({(float)sWidth - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH - 18, 0, 18, HEADER_HEIGHT}, "#42#") || (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_F)))
         {
             searchopen = !searchopen;
             strcpy(searchtext, "");
@@ -314,7 +326,7 @@ int main(int argc, char *argv[])
         if (searchopen)
         {
             bool tbenter = GuiTextBox({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, searchtext, 64, true);
-            if(tbenter)
+            if (tbenter && !IsMouseButtonDown(MOUSE_LEFT_BUTTON))
                 searchopen = false;
             string searchtext = searchtext;
         }
@@ -381,10 +393,10 @@ int main(int argc, char *argv[])
 
             list<Song> multiselsongs;
             int si = 0;
-            if(multiss)
-                for(Song s : *lib.get_playlist_songs(playlist))
+            if (multiss)
+                for (Song s : *lib.get_playlist_songs(playlist))
                 {
-                    if(si >= multistartsong && si <= multiendsong)
+                    if (si >= multistartsong && si <= multiendsong)
                         multiselsongs.push_back(s);
                     si++;
                 }
@@ -408,7 +420,8 @@ int main(int argc, char *argv[])
                     lib.add_song_to_playlist(playlistbtn, selectedsong);
                 break;
             case REMOVE:
-                if (multiss) {
+                if (multiss)
+                {
                     for (Song s : multiselsongs)
                         lib.remove_song_from_playlist(playlist, s);
                 }
