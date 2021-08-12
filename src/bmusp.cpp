@@ -133,6 +133,7 @@ int main(int argc, char *argv[])
     int scrollpos = 0;
     bool searchopen = false;
     char searchtext[64];
+    Song jumptosong;
 
     if (!lib.load_library())
     {
@@ -200,9 +201,7 @@ int main(int argc, char *argv[])
                 if (s == plr.song)
                     GuiSetStyle(BUTTON, BASE, 0x111155ff);
                 else if ((multistartsong <= songnum && multiendsong >= songnum && multiss) || (s == selectedsong && songoptionsopen))
-                {
                     GuiSetStyle(BUTTON, BASE, 0x552200ff);
-                }
                 else
                     GuiSetStyle(BUTTON, BASE, 0x000000ff);
                 if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
@@ -236,6 +235,14 @@ int main(int argc, char *argv[])
 
         scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * (SONG_HEIGHT + 1));
         scroll = -scrollpos;
+
+        // jump to currently playing song
+        if(IsKeyPressed(KEY_J))
+        {
+            Song playing = plr.get_queue_song_at(0);
+            int spos = lib.get_song_number(playlist, playing);
+            scroll = -(spos * (SONG_HEIGHT + 1));
+        }
 
         // cout << "multiss: " << (multiss ? "true" : "false") << " songoptionsopen: " << (songoptionsopen ? "true" : "false") << endl;
         // play pause button

@@ -192,6 +192,13 @@ public:
         q.clear();
     }
 
+    Song get_queue_song_at(int num)
+    {
+        list<Song>::iterator it = q.begin();
+        advance(it, num);
+        return *it;
+    }
+
     bool has_queue()
     {
         if (q.size() > 1)
