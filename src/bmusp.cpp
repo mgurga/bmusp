@@ -160,6 +160,8 @@ int main(int argc, char *argv[])
     GuiLoadStyle("assets/cyber.rgs");
     SetTargetFPS(60);
 
+    // lib.import_playlist(3, "test.dbpl");
+
     while (!WindowShouldClose())
     {
         // pre draw logic
@@ -237,7 +239,7 @@ int main(int argc, char *argv[])
         scroll = -scrollpos;
 
         // jump to currently playing song
-        if(IsKeyPressed(KEY_J))
+        if (IsKeyPressed(KEY_J))
         {
             Song playing = plr.get_queue_song_at(0);
             int spos = lib.get_song_number(playlist, playing);

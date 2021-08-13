@@ -36,5 +36,6 @@ add_executable( ${PROJECT_NAME}
                 src/player.cpp
                 src/library.cpp
                 src/cli.cpp
+                src/importer.cpp
                 ${tinyfiledialogs_SOURCE_DIR}/tinyfiledialogs.c)
 target_link_libraries(${PROJECT_NAME} ${raylib_LIBRARY} ${TAGLIB_LIBRARIES} ${SDL2_LIBRARIES})

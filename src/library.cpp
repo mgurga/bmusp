@@ -25,6 +25,8 @@
 #include "../config.h"
 #endif
 
+#include "importer.cpp"
+
 using namespace std;
 
 class Library
@@ -162,6 +164,18 @@ public:
         list<list<Song>>::iterator plit = playlists.begin();
         advance(plit, plnum);
         return plit;
+    }
+
+    void import_playlist(int plnum, string path)
+    {
+        Importer imp;
+        list<Song> npl = imp.import_playlist(path);
+        cout << "importing " << npl.size() << " songs" << endl;
+        if(npl.size() != 0)
+            for(Song ns : npl)
+            {
+                //add_song_to_playlist(plnum, ns);
+            }
     }
 
 private:
