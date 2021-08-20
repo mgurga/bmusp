@@ -111,6 +111,11 @@ public:
         mdirs.clear();
     }
 
+    vector<string> get_playlist_filter()
+    {
+        return Importer().playlistfilters;
+    }
+
     list<Song> search_query(int plnum, string query)
     {
         list<Song> pls = *get_playlist_songs(plnum);
@@ -173,9 +178,8 @@ public:
         cout << "importing " << npl.size() << " songs" << endl;
         if(npl.size() != 0)
             for(Song ns : npl)
-            {
-                //add_song_to_playlist(plnum, ns);
-            }
+                add_song_to_playlist(plnum, ns);
+
     }
 
 private:

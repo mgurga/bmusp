@@ -160,8 +160,6 @@ int main(int argc, char *argv[])
     GuiLoadStyle("assets/cyber.rgs");
     SetTargetFPS(60);
 
-    // lib.import_playlist(3, "test.dbpl");
-
     while (!WindowShouldClose())
     {
         // pre draw logic
@@ -446,7 +444,7 @@ int main(int argc, char *argv[])
         Vector2 mouse = GetMousePosition();
         GuiSetStyle(DROPDOWNBOX, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiUnlock();
-        if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Empty Songlist;Quit", &fileddnum, fileddedit))
+        if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Import Playlist;Empty Songlist;Quit", &fileddnum, fileddedit))
         {
             fileddedit = !fileddedit;
             switch (fileddnum)
@@ -475,13 +473,24 @@ int main(int argc, char *argv[])
                 break;
             }
             case 3:
+            {
+                const char *f[256];
+                for (int i = 0; i < lib.get_playlist_filter().size(); i++)
+                {
+                    f[i] = lib.get_playlist_filter()[i].c_str();
+                }
+                auto mpath = tinyfd_openFileDialog("select playlist file", NULL, lib.get_playlist_filter().size(), &f[0], "", 1);
+                lib.import_playlist(playlist, mpath);
+                break;
+            }
+            case 4:
                 if (tinyfd_messageBox("clear song list?", "are you sure you want to clear all playlists?", "yesno", "warning", 0) == 1)
                 {
                     lib.clear_mdir();
                     lib.populate(playlist, true);
                 }
                 break;
-            case 4:
+            case 5:
                 exit(0);
             }
             fileddnum = 0;
