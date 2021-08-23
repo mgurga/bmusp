@@ -83,7 +83,24 @@ public:
         }
         // cout << "added " << totaladditions << " songs to songlist" << endl;
         cout << "songlist has a total of " << get_playlist_songs(0)->size() << " songs" << endl;
-        get_playlist_songs(0)->sort(song_compare);
+        get_playlist_songs(plnum)->sort(song_compare);
+        save_library();
+    }
+
+    void quick_add_file_folder(int plnum, string path)
+    {
+        const filesystem::path file(path);
+        if (filesystem::is_regular_file(path))
+        {
+            cout << "added single file" << path << endl;
+            add_regular_file(plnum, path);
+        }
+        else
+        {
+            cout << "starting recursive search on: " << path << endl;
+            populate_rec(plnum, path, 0);
+        }
+        get_playlist_songs(plnum)->sort(song_compare);
         save_library();
     }
 
@@ -289,7 +306,7 @@ private:
     void add_song(int plnum, Song nsong)
     {
         for (Song s : *get_playlist_songs(plnum))
-            if (nsong == s)
+            if (nsong.path == s.path)
                 return;
         get_playlist_songs(plnum)->push_back(nsong);
     }

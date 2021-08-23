@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
         // jump to currently playing song
         if (IsKeyPressed(KEY_J))
         {
-            Song playing = plr.get_queue_song_at(0);
+            Song playing = plr.song;
             int spos = lib.get_song_number(playlist, playing);
             scroll = -(spos * (SONG_HEIGHT + 1));
         }
@@ -441,7 +441,6 @@ int main(int argc, char *argv[])
         }
 
         // file dropdown
-        Vector2 mouse = GetMousePosition();
         GuiSetStyle(DROPDOWNBOX, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
         GuiUnlock();
         if (GuiDropdownBox((Rectangle){0, 0, 50, HEADER_HEIGHT}, "File;Add Song;Add Folder;Import Playlist;Empty Songlist;Quit", &fileddnum, fileddedit))
@@ -457,19 +456,15 @@ int main(int argc, char *argv[])
                     f[i] = lib.filters[i].c_str();
                 }
                 auto mpath = tinyfd_openFileDialog("select music files", NULL, lib.filters.size(), &f[0], "", 1);
-                lib.add_mdir(mpath);
-                lib.populate(playlist);
+                if (mpath != NULL)
+                    lib.quick_add_file_folder(playlist, mpath);
                 break;
             }
             case 2:
             {
                 auto mpath = tinyfd_selectFolderDialog("select song folder", "");
                 if (mpath != NULL)
-                {
-                    cout << "adding music folder: " << mpath << endl;
-                    lib.add_mdir(mpath);
-                    lib.populate(playlist);
-                }
+                    lib.quick_add_file_folder(playlist, mpath);
                 break;
             }
             case 3:
