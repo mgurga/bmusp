@@ -291,8 +291,8 @@ int main(int argc, char *argv[])
         GuiSetStyle(PROGRESSBAR, TEXT_PADDING, 3);
         GuiSetStyle(SLIDER, SLIDER_RIGHT_TEXT_CONTAINED, 1);
         GuiSetStyle(SLIDER, SLIDER_LEFT_TEXT_CONTAINED, 1);
-        if (!searchopen)
-            if (plr.is_playing())
+        if (!searchopen) {
+            if (!(plr.song.name == ""))
             {
                 string pbSong = "";
                 pbSong.append(to_string(plr.song.trackNum) + ". ");
@@ -303,10 +303,10 @@ int main(int argc, char *argv[])
             }
             else
             {
-                string status = plr.paused ? "Paused" : "Stopped";
-                GuiSliderPro({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, status.c_str(),
+                GuiSliderPro({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, "Stopped",
                              "0:00/0:00", 1, 0, 2, 10);
             }
+        }
 
         // volume slider
         if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_EQUAL))
@@ -335,7 +335,6 @@ int main(int argc, char *argv[])
             bool tbenter = GuiTextBox({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, searchtext, 64, true);
             if (tbenter && !IsMouseButtonDown(MOUSE_LEFT_BUTTON))
                 searchopen = false;
-            string searchtext = searchtext;
         }
 
         // playlist tab buttons
@@ -401,7 +400,7 @@ int main(int argc, char *argv[])
             list<Song> multiselsongs;
             int si = 0;
             if (multiss)
-                for (Song s : *lib.get_playlist_songs(playlist))
+                for (const Song &s : *lib.get_playlist_songs(playlist))
                 {
                     if (si >= multistartsong && si <= multiendsong)
                         multiselsongs.push_back(s);
@@ -410,7 +409,7 @@ int main(int argc, char *argv[])
 
             switch (selectedoption)
             {
-            case EXIT:
+            case EXIT: case NONE:
                 break;
             case ADD_TO_QUEUE:
                 if (multiss)
@@ -421,7 +420,7 @@ int main(int argc, char *argv[])
                 break;
             case ADD_TO_PLAYLIST:
                 if (multiss)
-                    for (Song s : multiselsongs)
+                    for (const Song &s : multiselsongs)
                         lib.add_song_to_playlist(playlistbtn, s);
                 else
                     lib.add_song_to_playlist(playlistbtn, selectedsong);
@@ -429,7 +428,7 @@ int main(int argc, char *argv[])
             case REMOVE:
                 if (multiss)
                 {
-                    for (Song s : multiselsongs)
+                    for (const Song &s : multiselsongs)
                         lib.remove_song_from_playlist(playlist, s);
                 }
                 else

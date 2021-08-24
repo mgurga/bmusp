@@ -30,6 +30,7 @@ public:
 
         if (ext == ".dbpl")
             return import_dbpl(path);
+        return list<Song>();
     }
 
 private:

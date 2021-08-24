@@ -20,7 +20,7 @@ class Player
 {
 public:
     Song song;
-    bool paused;
+    bool paused = false;
 
     Player()
     {
@@ -78,7 +78,7 @@ public:
             return pausepos;
         if (starttime == 0)
             return -1;
-        if (Mix_PlayingMusic == 0)
+        if (Mix_PlayingMusic() == 0)
             return -1; // no music playing
         time_t now;
         time(&now);

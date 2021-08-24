@@ -67,7 +67,7 @@ public:
             }
         }
         cout << "total music directories: " << mdirs.size() << endl;
-        for (auto const path : mdirs)
+        for (auto const &path : mdirs)
         {
             const filesystem::path file(path);
             if (filesystem::is_regular_file(path))
@@ -117,7 +117,7 @@ public:
 
     void add_mdir(string nmdir)
     {
-        for (string i : mdirs)
+        for (const string &i : mdirs)
             if (nmdir == i)
                 return;
         mdirs.push_back(nmdir);
@@ -137,7 +137,7 @@ public:
     {
         list<Song> pls = *get_playlist_songs(plnum);
         list<Song> out;
-        for (Song s : pls) {
+        for (const Song &s : pls) {
             if (to_lower(s.name).find(to_lower(query)) != string::npos ||
                 to_lower(s.album).find(to_lower(query)) != string::npos ||
                 to_lower(s.artist).find(to_lower(query)) != string::npos ||
@@ -157,6 +157,7 @@ public:
                 return i;
             std::advance(it, 1);
         }
+        return -1;
     }
 
     Song get_song_at(int plnum, int n)
@@ -194,7 +195,7 @@ public:
         list<Song> npl = imp.import_playlist(path);
         cout << "importing " << npl.size() << " songs" << endl;
         if(npl.size() != 0)
-            for(Song ns : npl)
+            for(const Song &ns : npl)
                 add_song_to_playlist(plnum, ns);
 
     }
@@ -245,6 +246,8 @@ private:
                 else if (s2.trackNum < s1.trackNum)
                     return false;
                 break;
+            case DURATION: case STATUS_ICON:
+                break;
             }
         }
 
@@ -276,7 +279,7 @@ private:
         string ext = entry.path().filename().extension();
 
         bool supported = false;
-        for (string i : filters)
+        for (const string &i : filters)
             if (ext == i.substr(1))
                 supported = true;
 
@@ -305,7 +308,7 @@ private:
 
     void add_song(int plnum, Song nsong)
     {
-        for (Song s : *get_playlist_songs(plnum))
+        for (const Song &s : *get_playlist_songs(plnum))
             if (nsong.path == s.path)
                 return;
         get_playlist_songs(plnum)->push_back(nsong);
