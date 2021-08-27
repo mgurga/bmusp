@@ -3,6 +3,7 @@
 #define RAYGUI_SUPPORT_ICONS
 #include <list>
 #include <regex>
+#include <random>
 #include "raylib.h"
 #include "cli.cpp"
 #include "tinyfiledialogs.h"
@@ -134,6 +135,8 @@ int main(int argc, char *argv[])
     bool searchopen = false;
     char searchtext[64];
     Song jumptosong;
+    EndAction end_action = NEXT;
+    default_random_engine generator;
 
     if (!lib.load_library())
     {
@@ -165,10 +168,33 @@ int main(int argc, char *argv[])
         // pre draw logic
         sWidth = GetScreenWidth();
         sHeight = GetScreenHeight();
+
+        // song end action
         if (plr.is_song_over())
         {
-            Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
-            plr.play(nSong);
+            switch(end_action)
+            {
+            case REPEAT:
+                plr.play(plr.song);
+                break;
+            case STOP:
+                plr.stop();
+                break;
+            case NEXT:
+            {
+                Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
+                plr.play(nSong);
+                break;
+            }
+            case RANDOM:
+            {
+                uniform_int_distribution<int> distribution(0,lib.get_playlist_songs(playlist)->size());
+                int rnd = distribution(generator);
+                Song nSong = lib.get_song_at(playlist, rnd);
+                plr.play(nSong);
+                break;
+            }
+            }
         }
 
         // check for command
@@ -282,6 +308,10 @@ int main(int argc, char *argv[])
             }
         }
 
+        // end action toggle
+        if(GuiButton({95, 0, 15, HEADER_HEIGHT}, string("#" + to_string(end_action) + "#").c_str()))
+            end_action++;
+
         // current song progress bar
         if (IsKeyPressed(KEY_RIGHT))
             plr.jump_to(plr.current_position() + 5);
@@ -297,13 +327,13 @@ int main(int argc, char *argv[])
                 string pbSong = "";
                 pbSong.append(to_string(plr.song.trackNum) + ". ");
                 pbSong.append(plr.song.name);
-                float pos = GuiSliderPro({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
+                float pos = GuiSliderPro({110, 0, (float)sWidth - 128 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, pbSong.c_str(),
                                          pbTime.c_str(), plr.current_position(), 0, plr.song.duration, 10);
                 plr.jump_to(pos);
             }
             else
             {
-                GuiSliderPro({95, 0, (float)sWidth - 113 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, "Stopped",
+                GuiSliderPro({110, 0, (float)sWidth - 128 - VOLUME_SLIDER_WIDTH - NUM_OF_PLAYLISTS * PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, "Stopped",
                              "0:00/0:00", 1, 0, 2, 10);
             }
         }

@@ -49,3 +49,22 @@ enum SongOption
     ADD_TO_PLAYLIST,
     REMOVE
 };
+
+enum EndAction
+{
+    NEXT = 115,
+    REPEAT = 61,
+    RANDOM = 193,
+    STOP = 113
+};
+
+inline EndAction& operator++(EndAction& ea, int)
+{
+    switch(ea)
+    {
+    case EndAction::NEXT: return ea = EndAction::REPEAT;
+    case EndAction::REPEAT: return ea = EndAction::RANDOM;
+    case EndAction::RANDOM: return ea = EndAction::STOP;
+    case EndAction::STOP: return ea = EndAction::NEXT;
+    }
+}
