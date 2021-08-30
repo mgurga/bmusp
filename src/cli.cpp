@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
+#include <random>
 
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -58,7 +59,7 @@ public:
         }
     }
 
-    void check_command(Player *plr, Library *lib)
+    void check_command(Player *plr, Library *lib, int *playlist, EndAction *end_action, default_random_engine *generator)
     {
         ifstream cmdfile(string(CONFIG_LOCATION) + "bmuspcmd");
         if (cmdfile.is_open())
@@ -77,10 +78,32 @@ public:
             }
             else if (cmd == "next")
             {
-                if (plr->is_playing())
+                plr->jump_to(plr->song.duration);
+                switch(*end_action)
                 {
-                    Song nSong = lib->get_song_at(0, lib->get_song_number(0, plr->song) + 1);
+                case REPEAT:
+                    plr->play(plr->song);
+                    break;
+                case STOP:
+                    plr->stop();
+                    break;
+                case NEXT:
+                {
+                    int songIndex = lib->get_song_number(*playlist, plr->song) + 1;
+                    if (lib->get_playlist_songs(*playlist)->size()  == songIndex)
+                        songIndex = 0;
+                    Song nSong = lib->get_song_at(*playlist, songIndex);
                     plr->play(nSong);
+                    break;
+                }
+                case RANDOM:
+                {
+                    uniform_int_distribution<int> distribution(0,lib->get_playlist_songs(*playlist)->size() - 1);
+                    int rnd = distribution(*generator);
+                    Song nSong = lib->get_song_at(*playlist, rnd);
+                    plr->play(nSong);
+                    break;
+                }
                 }
             }
             else if (cmd == "prev")

@@ -182,13 +182,16 @@ int main(int argc, char *argv[])
                 break;
             case NEXT:
             {
-                Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
+                int songIndex = lib.get_song_number(playlist, plr.song) + 1;
+                if (lib.get_playlist_songs(playlist)->size()  == songIndex)
+                    songIndex = 0;
+                Song nSong = lib.get_song_at(playlist, songIndex);
                 plr.play(nSong);
                 break;
             }
             case RANDOM:
             {
-                uniform_int_distribution<int> distribution(0,lib.get_playlist_songs(playlist)->size());
+                uniform_int_distribution<int> distribution(0,lib.get_playlist_songs(playlist)->size() - 1);
                 int rnd = distribution(generator);
                 Song nSong = lib.get_song_at(playlist, rnd);
                 plr.play(nSong);
@@ -199,7 +202,7 @@ int main(int argc, char *argv[])
 
         // check for command
         if (fmod(floor(GetTime() * 60), FRAMES_BETWEEN_CMD_CHECK) == 0)
-            cli.check_command(&plr, &lib);
+            cli.check_command(&plr, &lib, &playlist, &end_action, &generator);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -299,12 +302,7 @@ int main(int argc, char *argv[])
                     plr.is_song_over(); // force check if song over to quickly go to next song
                 }
                 else
-                {
-                    Song nSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) + 1);
-                    plr.clear_queue();
-                    plr.stop();
-                    plr.add_to_queue(nSong);
-                }
+                    plr.jump_to(plr.song.duration);
             }
         }
 
