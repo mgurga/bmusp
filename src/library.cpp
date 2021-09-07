@@ -32,7 +32,7 @@ using namespace std;
 class Library
 {
 public:
-    list<list<Song>> playlists;
+    list<Playlist> playlists;
     const vector<string> filters = {"*.mp3", "*.flac", "*.m4a", "*.ogg", "*.wav"};
 
     bool load_library()
@@ -62,8 +62,8 @@ public:
             playlists.clear();
             for (int i = 0; i < NUM_OF_PLAYLISTS; i++)
             {
-                list<Song> ls;
-                playlists.push_front(ls);
+                Playlist npl;
+                playlists.push_front(npl);
             }
         }
         cout << "total music directories: " << mdirs.size() << endl;
@@ -135,9 +135,9 @@ public:
 
     list<Song> search_query(int plnum, string query)
     {
-        list<Song> pls = *get_playlist_songs(plnum);
+        list<Song>* pls = get_playlist_songs(plnum);
         list<Song> out;
-        for (const Song &s : pls) {
+        for (Song s : *pls) {
             if (to_lower(s.name).find(to_lower(query)) != string::npos ||
                 to_lower(s.album).find(to_lower(query)) != string::npos ||
                 to_lower(s.artist).find(to_lower(query)) != string::npos ||
@@ -148,45 +148,46 @@ public:
         return out;
     }
 
-    int get_song_number(int plnum, Song &s)
+    int get_song_number(int plnum, Song* s)
     {
         list<Song>::iterator it = get_playlist_songs(plnum)->begin();
         for (int i = 0; i < get_playlist_songs(plnum)->size(); i++)
         {
-            if (s == *it)
+            if (*s == *it)
                 return i;
             std::advance(it, 1);
         }
         return -1;
     }
 
-    Song get_song_at(int plnum, int n)
+    Song* get_song_at(int plnum, int n)
     {
         list<Song>::iterator it = get_playlist_songs(plnum)->begin();
         advance(it, n);
-        return *it;
+        return &*it;
     }
 
     void add_song_to_playlist(int plnum, Song s)
     {
-        list<list<Song>>::iterator plit = playlists.begin();
+        list<Playlist>::iterator plit = playlists.begin();
         advance(plit, plnum);
-        plit->push_front(s);
-        plit->sort(song_compare);
+        plit->songs.push_front(s);
+        plit->songs.sort(song_compare);
         save_library();
     }
 
-    void remove_song_from_playlist(int plnum, Song s){
-        list<list<Song>>::iterator plit = get_playlist_songs(plnum);
+    void remove_song_from_playlist(int plnum, Song s)
+    {
+        list<Song>* plit = get_playlist_songs(plnum);
         plit->remove(s);
         save_library();
     }
 
-    list<list<Song>>::iterator get_playlist_songs(int plnum)
+    list<Song>* get_playlist_songs(int plnum)
     {
-        list<list<Song>>::iterator plit = playlists.begin();
+        list<Playlist>::iterator plit = playlists.begin();
         advance(plit, plnum);
-        return plit;
+        return &plit->songs;
     }
 
     void import_playlist(int plnum, string path)
@@ -197,7 +198,13 @@ public:
         if(npl.size() != 0)
             for(const Song &ns : npl)
                 add_song_to_playlist(plnum, ns);
+    }
 
+    list<Playlist>::iterator get_playlist(int plnum)
+    {
+        list<Playlist>::iterator plit = playlists.begin();
+        advance(plit, plnum);
+        return plit;
     }
 
 private:
@@ -208,9 +215,7 @@ private:
     string to_lower(string s)
     {
         for (auto& c : s)
-        {
             c = std::tolower(c);
-        }
         return s;
     }
 
@@ -218,7 +223,7 @@ private:
     {
         list<SongTag> sortorder = SONG_SORT_ORDER; // how to sort songlist
 
-        for (SongTag t : sortorder)
+        for (const SongTag& t : sortorder)
         {
             switch (t)
             {

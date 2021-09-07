@@ -82,17 +82,17 @@ public:
                 switch(*end_action)
                 {
                 case REPEAT:
-                    plr->play(plr->song);
+                    plr->play(&plr->song);
                     break;
                 case STOP:
                     plr->stop();
                     break;
                 case NEXT:
                 {
-                    int songIndex = lib->get_song_number(*playlist, plr->song) + 1;
+                    int songIndex = lib->get_song_number(*playlist, &plr->song) + 1;
                     if (lib->get_playlist_songs(*playlist)->size()  == songIndex)
                         songIndex = 0;
-                    Song nSong = lib->get_song_at(*playlist, songIndex);
+                    Song* nSong = lib->get_song_at(*playlist, songIndex);
                     plr->play(nSong);
                     break;
                 }
@@ -100,7 +100,7 @@ public:
                 {
                     uniform_int_distribution<int> distribution(0,lib->get_playlist_songs(*playlist)->size() - 1);
                     int rnd = distribution(*generator);
-                    Song nSong = lib->get_song_at(*playlist, rnd);
+                    Song* nSong = lib->get_song_at(*playlist, rnd);
                     plr->play(nSong);
                     break;
                 }
@@ -110,7 +110,7 @@ public:
             {
                 if (plr->is_playing())
                 {
-                    Song pSong = lib->get_song_at(0, lib->get_song_number(0, plr->song) - 1);
+                    Song* pSong = lib->get_song_at(0, lib->get_song_number(0, &plr->song) - 1);
                     plr->play(pSong);
                 }
             }

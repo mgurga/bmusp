@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <ostream>
+#include <list>
 
 struct Song
 {
@@ -68,3 +69,17 @@ inline EndAction& operator++(EndAction& ea, int)
     case EndAction::STOP: return ea = EndAction::NEXT;
     }
 }
+
+struct Playlist
+{
+    std::list<Song> songs = std::list<Song>();
+    std::string name = "New Playlist";
+    int scroll = 0;
+    EndAction end_action = NEXT;
+
+    template <class Archive>
+    void serialize(Archive &ar)
+    {
+        ar(songs, name, scroll);
+    }
+};

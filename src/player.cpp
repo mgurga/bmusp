@@ -56,20 +56,21 @@ public:
     void play()
     {
         if (q.size() != 0)
-            play(q.front());
+            play(&q.front());
     }
 
-    void play(Song s)
+    void play(Song* s)
     {
         if (is_playing())
         {
             stop();
         }
-        music = Mix_LoadMUS(s.path.c_str());
+        music = Mix_LoadMUS(s->path.c_str());
         Mix_PlayMusic(music, 0);
         starttime = time(0);
         paused = false;
-        song = s;
+        song = *s;
+        s->plays++;
     }
 
     int current_position()
@@ -123,22 +124,22 @@ public:
         paused = true;
     }
 
-    void add_to_queue(Song s)
+    void add_to_queue(Song* s)
     {
-        q.push_back(s);
+        q.push_back(*s);
         if (!is_playing())
         {
             playingq = true;
-            play(q.front());
+            play(&q.front());
         }
     }
 
-    int get_song_queue_num(Song s)
+    int get_song_queue_num(Song* s)
     {
         int i = 0;
         for (Song qs : q)
         {
-            if (qs == s)
+            if (qs == *s)
             {
                 return i;
             }
@@ -166,7 +167,7 @@ public:
             }
             else
             {
-                play(q.front());
+                play(&q.front());
                 playingq = true;
                 return false;
             }
@@ -192,11 +193,11 @@ public:
         q.clear();
     }
 
-    Song get_queue_song_at(int num)
+    Song* get_queue_song_at(int num)
     {
         list<Song>::iterator it = q.begin();
         advance(it, num);
-        return *it;
+        return &*it;
     }
 
     bool has_queue()

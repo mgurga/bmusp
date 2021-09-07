@@ -43,7 +43,7 @@ string sec_to_minsec(int i)
     return fancyTimes;
 }
 
-string get_song_button_name(Song s, Player *plr)
+string get_song_button_name(Song* s, Player *plr)
 {
     string out;
     char filler = SONG_TAG_FILLER_CHAR;
@@ -54,35 +54,35 @@ string get_song_button_name(Song s, Player *plr)
         {
         case ARTIST:
         {
-            string f_artist = s.artist;
+            string f_artist = s->artist;
             f_artist.resize(song_tag_lengths[i], filler);
             out.append(f_artist);
             break;
         }
         case NAME:
         {
-            string f_name = s.name;
+            string f_name = s->name;
             f_name.resize(song_tag_lengths[i], filler);
             out.append(f_name);
             break;
         }
         case ALBUM:
         {
-            string f_album = s.album;
+            string f_album = s->album;
             f_album.resize(song_tag_lengths[i], filler);
             out.append(f_album);
             break;
         }
         case TRACKNUM:
         {
-            string f_tnum = to_string(s.trackNum);
+            string f_tnum = to_string(s->trackNum);
             f_tnum.resize(song_tag_lengths[i], filler);
             out.append(f_tnum);
             break;
         }
         case DURATION:
         {
-            string f_dur = sec_to_minsec(s.duration);
+            string f_dur = sec_to_minsec(s->duration);
             f_dur.resize(song_tag_lengths[i], filler);
             out.append(f_dur);
             break;
@@ -91,7 +91,7 @@ string get_song_button_name(Song s, Player *plr)
         {
             int sq = plr->get_song_queue_num(s);
             string f_si;
-            if (plr->song == s)
+            if (plr->song == *s)
                 f_si.append(">>");
             else if (sq != -1)
                 f_si.append(">" + to_string(sq));
@@ -135,8 +135,11 @@ int main(int argc, char *argv[])
     bool searchopen = false;
     char searchtext[64];
     Song jumptosong;
-    EndAction end_action = NEXT;
     default_random_engine generator;
+    bool renameopen = false;
+    char renametext[64];
+    int renamepl = 0;
+    bool canclicksong = true;
 
     if (!lib.load_library())
     {
@@ -172,20 +175,20 @@ int main(int argc, char *argv[])
         // song end action
         if (plr.is_song_over())
         {
-            switch(end_action)
+            switch(lib.get_playlist(playlist)->end_action)
             {
             case REPEAT:
-                plr.play(plr.song);
+                plr.play(&plr.song);
                 break;
             case STOP:
                 plr.stop();
                 break;
             case NEXT:
             {
-                int songIndex = lib.get_song_number(playlist, plr.song) + 1;
+                int songIndex = lib.get_song_number(playlist, &plr.song) + 1;
                 if (lib.get_playlist_songs(playlist)->size()  == songIndex)
                     songIndex = 0;
-                Song nSong = lib.get_song_at(playlist, songIndex);
+                Song* nSong = lib.get_song_at(playlist, songIndex);
                 plr.play(nSong);
                 break;
             }
@@ -193,7 +196,7 @@ int main(int argc, char *argv[])
             {
                 uniform_int_distribution<int> distribution(0,lib.get_playlist_songs(playlist)->size() - 1);
                 int rnd = distribution(generator);
-                Song nSong = lib.get_song_at(playlist, rnd);
+                Song* nSong = lib.get_song_at(playlist, rnd);
                 plr.play(nSong);
                 break;
             }
@@ -202,7 +205,7 @@ int main(int argc, char *argv[])
 
         // check for command
         if (fmod(floor(GetTime() * 60), FRAMES_BETWEEN_CMD_CHECK) == 0)
-            cli.check_command(&plr, &lib, &playlist, &end_action, &generator);
+            cli.check_command(&plr, &lib, &playlist, &lib.get_playlist(playlist)->end_action, &generator);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -210,12 +213,6 @@ int main(int argc, char *argv[])
 
         if (fileddedit)
             GuiLock();
-
-        // scrollbar stuff
-        if (GetMouseY() > HEADER_HEIGHT)
-            scroll += GetMouseWheelMove() * 50;
-        if (scroll > 0)
-            scroll = 0;
 
         // draw song list
         GuiSetStyle(BUTTON, TEXT_ALIGNMENT, GUI_TEXT_ALIGN_LEFT);
@@ -233,24 +230,24 @@ int main(int argc, char *argv[])
                     GuiSetStyle(BUTTON, BASE, 0x552200ff);
                 else
                     GuiSetStyle(BUTTON, BASE, 0x000000ff);
-                if (GuiButton(sbtn, get_song_button_name(s, &plr).c_str()))
+                if (GuiButton(sbtn, get_song_button_name(&s, &plr).c_str()))
                 {
-                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss)
+                    if (GetMouseY() > HEADER_HEIGHT && !songoptionsopen && !multiss && canclicksong)
                     {
                         plr.clear_queue();
                         plr.stop();
-                        plr.add_to_queue(s);
+                        plr.add_to_queue(&s);
                     }
                 }
                 // song right click
-                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && multistartsong == -1)
+                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && multistartsong == -1 && canclicksong)
                 {
                     songoptionsopen = true;
                     selectedsong = s;
                     songoptiony = sbtn.y + SONG_HEIGHT;
                     multistartsong = songnum;
                 }
-                else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && !multiss && songoptionsopen)
+                else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), sbtn) && !multiss && songoptionsopen && canclicksong)
                 {
                     // second right click
                     multiss = true;
@@ -262,14 +259,20 @@ int main(int argc, char *argv[])
         }
         GuiSetStyle(BUTTON, BASE, 0x000000);
 
-        scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * (SONG_HEIGHT + 1));
+        // scrollbar stuff
+        scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * (SONG_HEIGHT + 1) - (SONG_HEIGHT * 10));
         scroll = -scrollpos;
+
+        if (GetMouseY() > HEADER_HEIGHT && -scroll < songnum * (SONG_HEIGHT + 1) - (SONG_HEIGHT * 10))
+            scroll += GetMouseWheelMove() * 50;
+        if (scroll > 0)
+            scroll = 0;
 
         // jump to currently playing song
         if (IsKeyPressed(KEY_J))
         {
             Song playing = plr.song;
-            int spos = lib.get_song_number(playlist, playing);
+            int spos = lib.get_song_number(playlist, &playing);
             scroll = -(spos * (SONG_HEIGHT + 1));
         }
 
@@ -284,7 +287,7 @@ int main(int argc, char *argv[])
         {
             if (plr.is_playing())
             {
-                Song pSong = lib.get_song_at(playlist, lib.get_song_number(playlist, plr.song) - 1);
+                Song* pSong = lib.get_song_at(playlist, lib.get_song_number(playlist, &plr.song) - 1);
                 plr.clear_queue();
                 plr.stop();
                 plr.add_to_queue(pSong);
@@ -307,8 +310,8 @@ int main(int argc, char *argv[])
         }
 
         // end action toggle
-        if(GuiButton({95, 0, 15, HEADER_HEIGHT}, string("#" + to_string(end_action) + "#").c_str()))
-            end_action++;
+        if(GuiButton({95, 0, 15, HEADER_HEIGHT}, string("#" + to_string(lib.get_playlist(playlist)->end_action) + "#").c_str()))
+            lib.get_playlist(playlist)->end_action++;
 
         // current song progress bar
         if (IsKeyPressed(KEY_RIGHT))
@@ -375,7 +378,36 @@ int main(int argc, char *argv[])
                 pltabname = to_string(i);
             if (GuiButton({(float)sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH), 0, PLAYLIST_TAB_WIDTH, HEADER_HEIGHT}, pltabname.c_str()))
             {
+                lib.get_playlist(playlist)->scroll = scroll;
                 playlist = i;
+                scroll = lib.get_playlist(playlist)->scroll;
+                lib.save_library();
+            }
+            if (sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH) < GetMouseX() && sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH) + PLAYLIST_TAB_WIDTH > GetMouseX() && GetMouseY() < HEADER_HEIGHT)
+            {
+                string plname = lib.get_playlist(i)->name;
+                DrawRectangle(GetMouseX() - (plname.size()*13), HEADER_HEIGHT, plname.size()*13, HEADER_HEIGHT, BLACK);
+                GuiTextBox({(float)GetMouseX() - (plname.size()*13), (float)HEADER_HEIGHT, (float)plname.size()*13, HEADER_HEIGHT}, plname.data(), 13, false);
+            }
+            if ((sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH) < GetMouseX() && sWidth - ((NUM_OF_PLAYLISTS - i) * PLAYLIST_TAB_WIDTH) + PLAYLIST_TAB_WIDTH > GetMouseX() && GetMouseY() < HEADER_HEIGHT && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)))
+            {
+                renamepl = i;
+                renameopen = true;
+                canclicksong = false;
+                strcpy(renametext, "");
+            }
+            if(renameopen) {
+                int btnnum = GuiTextInputBox({(float)sWidth/2 - 100, (float)sHeight/2 - 50, 200, 100}, "rename playlist", "", "ok", renametext);
+                cout << renametext << endl;
+                if(btnnum == 1) {
+                    lib.get_playlist(renamepl)->name = string(renametext);
+                    lib.save_library();
+                    renameopen = false;
+                    canclicksong = true;
+                } else if(btnnum == 0) {
+                    renameopen = false;
+                    canclicksong = true;
+                }
             }
         }
 
@@ -444,7 +476,7 @@ int main(int argc, char *argv[])
                     for (int i = multistartsong; i <= multiendsong; i++)
                         plr.add_to_queue(lib.get_song_at(playlist, i));
                 else
-                    plr.add_to_queue(selectedsong);
+                    plr.add_to_queue(&selectedsong);
                 break;
             case ADD_TO_PLAYLIST:
                 if (multiss)
