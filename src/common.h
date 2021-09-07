@@ -80,6 +80,6 @@ struct Playlist
     template <class Archive>
     void serialize(Archive &ar)
     {
-        ar(songs, name, scroll);
+        ar(songs, name, scroll, end_action);
     }
 };

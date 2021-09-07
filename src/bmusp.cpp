@@ -263,7 +263,9 @@ int main(int argc, char *argv[])
         scrollpos = GuiScrollBar({(float)sWidth - GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), HEADER_HEIGHT, (float)GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH), (float)sHeight - HEADER_HEIGHT}, -scroll, 0, songnum * (SONG_HEIGHT + 1) - (SONG_HEIGHT * 10));
         scroll = -scrollpos;
 
-        if (GetMouseY() > HEADER_HEIGHT && -scroll < songnum * (SONG_HEIGHT + 1) - (SONG_HEIGHT * 10))
+        if (GetMouseY() > HEADER_HEIGHT && -scroll < songnum * (SONG_HEIGHT + 1) - (SONG_HEIGHT * 10) && GetMouseWheelMove() < 0)
+            scroll += GetMouseWheelMove() * 50;
+        if (GetMouseY() > HEADER_HEIGHT && GetMouseWheelMove() > 0)
             scroll += GetMouseWheelMove() * 50;
         if (scroll > 0)
             scroll = 0;
